@@ -2,6 +2,7 @@
 import { loadAll } from './db.js';
 import { esc, paragraphs, safeUrl, hue, initials } from './util.js';
 import { BRAND } from './icons.js';
+import { SOCIALS } from './socials.js';
 
 const app = document.getElementById('app');
 document.getElementById('year').textContent = new Date().getFullYear();
@@ -23,6 +24,10 @@ function iconKey(url) {
   if (u.includes('steampowered') || u.includes('steamcommunity')) return 'steam';
   if (u.includes('github.com')) return 'github';
   if (u.includes('itch.io')) return 'itchdotio';
+  if (u.includes('tiktok.com')) return 'tiktok';
+  if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+  if (u.includes('tumblr.com')) return 'tumblr';
+  if (/\/\/(www\.)?(x|twitter)\.com\//.test(u)) return 'x';
   return '';
 }
 function icon(url) {
@@ -37,6 +42,12 @@ function prettyContact(url) {
   if (tg) return '@' + tg[1];
   const gh = u.match(/github\.com\/([\w-]+)\/?$/i);
   if (gh) return gh[1];
+  const at = u.match(/(?:tiktok|youtube)\.com\/(@[\w.-]+)/i);
+  if (at) return at[1];
+  const xh = u.match(/\/\/(?:www\.)?(?:x|twitter)\.com\/([\w]+)/i);
+  if (xh) return '@' + xh[1];
+  const tb = u.match(/tumblr\.com\/(?:blog\/)?([\w-]+)/i);
+  if (tb) return tb[1];
   return u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
 }
 
@@ -79,11 +90,21 @@ function linkButtons(links, primaryFirst = false) {
     .join('')}</ul>`;
 }
 
-// Круглые иконки-ссылки (на карточке участника)
-function socialIcons(links) {
+// Плитка контакта: иконка, подпись, ник
+function contactTile(c) {
+  return `
+    <a class="contact cut reveal" href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener">
+      <span class="contact-ico">${icon(c.url) || '↗'}</span>
+      <span class="contact-text"><small>${esc(c.label)}</small><b>${esc(prettyContact(c.url))}</b></span>
+      <span class="contact-arrow">→</span>
+    </a>`;
+}
+
+// Квадратные иконки-ссылки (на карточке участника, в шапке, в подвале)
+function socialIcons(links, cls = 'socials') {
   const list = (links || []).filter((l) => l && l.url && iconKey(l.url));
   if (!list.length) return '';
-  return `<div class="socials">${list.map((l) => `
+  return `<div class="${cls}">${list.map((l) => `
     <a class="social" href="${esc(safeUrl(l.url))}" target="_blank" rel="noopener" title="${esc(l.label)}: ${esc(prettyContact(l.url))}" aria-label="${esc(l.label)}">${icon(l.url)}</a>`).join('')}
   </div>`;
 }
@@ -179,6 +200,7 @@ function renderHome(scrollTo) {
           <a class="btn" href="#/team">About us</a>
         </div>
       </div>
+      ${socialIcons(SOCIALS, 'socials hero-socials')}
     </section>
     <div class="ticker" aria-hidden="true"><div class="ticker-track">${ticker}</div></div>
 
@@ -194,16 +216,15 @@ function renderHome(scrollTo) {
       ${projects.length ? `<div class="grid-projects" id="project-grid">${projectGrid(projects)}</div>` : '<p class="empty">Nothing here yet</p>'}
     </section>
 
-    ${(site.contacts || []).length ? `
+    ${(site.contacts || []).length || SOCIALS.length ? `
     <section class="section" id="contacts">
       ${sectionHead(++idx, 'Contact')}
-      <div class="contacts">${(site.contacts || []).filter((c) => c && c.url).map((c) => `
-        <a class="contact cut reveal" href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener">
-          <span class="contact-ico">${icon(c.url) || '↗'}</span>
-          <span class="contact-text"><small>${esc(c.label)}</small><b>${esc(prettyContact(c.url))}</b></span>
-          <span class="contact-arrow">→</span>
-        </a>`).join('')}
-      </div>
+      ${SOCIALS.length ? `
+        <h3 class="sub-head reveal">Follow us</h3>
+        <div class="contacts">${SOCIALS.map(contactTile).join('')}</div>` : ''}
+      ${(site.contacts || []).length ? `
+        <h3 class="sub-head reveal">Write to us</h3>
+        <div class="contacts">${site.contacts.filter((c) => c && c.url).map(contactTile).join('')}</div>` : ''}
     </section>` : ''}
   `;
   document.title = name;
@@ -402,6 +423,8 @@ async function start() {
   }
   const name = data.site.name || 'irenu';
   document.querySelectorAll('[data-site-name]').forEach((el) => (el.textContent = name));
+  const fs = document.getElementById('footer-socials');
+  if (fs) fs.innerHTML = socialIcons(SOCIALS, 'socials footer-socials-row');
   window.addEventListener('hashchange', route);
   route();
 }

@@ -4,6 +4,7 @@
 Данные — Supabase (`js/config.js`, публичный publishable key; права режет RLS).
 
 - `index.html` + `js/app.js` — публичный сайт, **на английском**. Контент берётся из таблиц `site`, `members`, `projects`, `project_members`.
+- `js/socials.js` — соцсети команды (TikTok, YouTube, X, Tumblr, TG-канал) — правятся в файле, без SQL. Иконки — `js/icons.js` (Simple Icons).
 - `admin.html` + `js/admin.js` — админка, на русском. Доступ: пользователь в Supabase Auth + его почта в таблице `editors`.
 - `me/` — личный раздел (PWA для iPhone), на русском: доски (`me_boards`) и тесты (`me_tests`, `me_attempts`). Каждый видит только свои записи.
 - `supabase/*.sql` — миграции, пользователь запускает их руками в SQL Editor (по порядку, все идемпотентны).

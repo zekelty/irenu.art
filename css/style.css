@@ -411,6 +411,19 @@ body.glitch-23::after {
 .social .ico { width: 18px; height: 18px; }
 .social:hover { background: var(--accent); transform: translateY(-2px); }
 
+/* ── соцсети команды ──────────────────────────── */
+.hero-socials { position: static; margin-top: 28px; flex-wrap: wrap; }
+.hero-socials .social { width: 44px; height: 44px; background: var(--bg-2); border-color: var(--line); }
+.hero-socials .social .ico { width: 20px; height: 20px; }
+.footer-socials-row { position: static; gap: 6px; }
+.footer-socials-row .social { width: 32px; height: 32px; background: transparent; border-color: var(--line); color: var(--muted); }
+.footer-socials-row .social:hover { color: #fff; }
+.footer-socials-row .social .ico { width: 15px; height: 15px; }
+.sub-head {
+  margin: 0 0 14px; font: 500 13px/1 var(--display); text-transform: uppercase; letter-spacing: .2em; color: var(--muted);
+}
+.contacts + .sub-head { margin-top: 32px; }
+
 /* ── стена теликов (#/23) ─────────────────────── */
 .tv-wall {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 34px 23px; /* 23 */
