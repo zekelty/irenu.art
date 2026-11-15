@@ -296,7 +296,7 @@ async function editMember(id) {
 }
 
 // ── проекты ────────────────────────────────────────────
-const STATUS = { done: 'Релиз', soon: 'Скоро в Steam', wip: 'В разработке', jam: 'Геймджем', idea: 'Идея' }; // 23
+const STATUS = { done: 'Релиз', page: 'Страничка в Steam', soon: 'Скоро в Steam', wip: 'В разработке', jam: 'Геймджем', idea: 'Идея' }; // 23
 
 async function listProjects() {
   const rows = await q(sb.from('projects').select('*').order('sort').order('created_at'));

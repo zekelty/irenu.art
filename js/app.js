@@ -1,12 +1,37 @@
 import { loadAll } from './db.js';
 import { esc, paragraphs, safeUrl, hue, initials } from './util.js';
+import { BRAND } from './icons.js';
 
 const app = document.getElementById('app');
 document.getElementById('year').textContent = new Date().getFullYear();
 
 // Порядок здесь = порядок фильтров на главной
-const STATUS = { done: 'Релиз', soon: 'Скоро в Steam', wip: 'В разработке', jam: 'Геймджем', idea: 'Идея' };
-const FILTER_LABEL = { done: 'Релизы', soon: 'Скоро в Steam', wip: 'В разработке', jam: 'Геймджемы', idea: 'Идеи' };
+const STATUS = { done: 'Релиз', page: 'Страничка в Steam', soon: 'Скоро в Steam', wip: 'В разработке', jam: 'Геймджем', idea: 'Идея' };
+const FILTER_LABEL = { done: 'Релизы', page: 'Страничка в Steam', soon: 'Скоро в Steam', wip: 'В разработке', jam: 'Геймджемы', idea: 'Идеи' };
+
+// Иконка по адресу ссылки
+function iconKey(url) {
+  const u = String(url || '').toLowerCase();
+  if (u.startsWith('mailto:') || u.includes('gmail')) return 'gmail';
+  if (u.includes('t.me/') || u.includes('telegram')) return 'telegram';
+  if (u.includes('discord')) return 'discord';
+  if (u.includes('steampowered') || u.includes('steamcommunity')) return 'steam';
+  if (u.includes('github.com')) return 'github';
+  if (u.includes('itch.io')) return 'itchdotio';
+  return '';
+}
+function icon(url) {
+  const k = iconKey(url);
+  return k && BRAND[k] ? `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="${BRAND[k]}"/></svg>` : '';
+}
+// Красивый текст для контакта: почта, @ник, discord.gg/...
+function prettyContact(url) {
+  const u = String(url || '');
+  if (u.startsWith('mailto:')) return u.slice(7);
+  const tg = u.match(/t\.me\/([\w_]+)/i);
+  if (tg) return '@' + tg[1];
+  return u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+}
 
 let data = null;
 let filter = 'all';
@@ -46,7 +71,7 @@ function linkButtons(links, primaryFirst = false) {
   const list = (links || []).filter((l) => l && l.url);
   if (!list.length) return '';
   return `<ul class="links">${list
-    .map((l, i) => `<li><a class="btn ${primaryFirst && i === 0 ? 'primary' : ''}" href="${esc(safeUrl(l.url))}" target="_blank" rel="noopener">${esc(l.label || l.url)} ↗</a></li>`)
+    .map((l, i) => `<li><a class="btn ${primaryFirst && i === 0 ? 'primary' : ''}" href="${esc(safeUrl(l.url))}" target="_blank" rel="noopener">${icon(l.url)}${esc(l.label || l.url)} ↗</a></li>`)
     .join('')}</ul>`;
 }
 
@@ -112,7 +137,6 @@ function playerCard(m, i) {
   return `
     <a class="player cut reveal" href="#/member/${encodeURIComponent(m.slug)}">
       <div class="player-media">${media(m.avatar_url, m.slug || m.name, initials(m.name), m.name)}</div>
-      <span class="player-num">${pad(i + 1)}</span>
       <div class="player-info">
         ${m.role ? `<span class="player-role">${esc(m.role)}</span>` : ''}
         <h3>${esc(m.name)}</h3>
@@ -182,7 +206,13 @@ function renderHome(scrollTo) {
     ${(site.contacts || []).length ? `
     <section class="section" id="contacts">
       ${sectionHead(++idx, 'Связь')}
-      <div class="contacts reveal">${linkButtons(site.contacts)}</div>
+      <div class="contacts">${(site.contacts || []).filter((c) => c && c.url).map((c) => `
+        <a class="contact cut reveal" href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener">
+          <span class="contact-ico">${icon(c.url) || '↗'}</span>
+          <span class="contact-text"><small>${esc(c.label)}</small><b>${esc(prettyContact(c.url))}</b></span>
+          <span class="contact-arrow">→</span>
+        </a>`).join('')}
+      </div>
     </section>` : ''}
   `;
   document.title = name;
@@ -207,7 +237,7 @@ function renderMember(slug) {
     <section class="profile">
       <div class="profile-photo cut">${media(m.avatar_url, m.slug || m.name, initials(m.name), m.name)}</div>
       <div>
-        <div class="kicker">Игрок // ${pad(i + 1)}</div>
+        <div class="kicker"><span class="live-dot"></span>${esc(data.site.name || 'irenu')} // состав</div>
         <h1>${esc(m.name)}</h1>
         ${m.role ? `<p style="margin:16px 0 0"><span class="player-role">${esc(m.role)}</span></p>` : ''}
         ${m.bio ? `<div class="prose">${paragraphs(m.bio)}</div>` : ''}
