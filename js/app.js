@@ -4,9 +4,13 @@ import { esc, paragraphs, safeUrl, hue, initials } from './util.js';
 const app = document.getElementById('app');
 document.getElementById('year').textContent = new Date().getFullYear();
 
-const STATUS = { wip: 'В разработке', done: 'Релиз', idea: 'Идея' };
+// Порядок здесь = порядок фильтров на главной
+const STATUS = { done: 'Релиз', soon: 'Скоро в Steam', wip: 'В разработке', jam: 'Геймджем', idea: 'Идея' };
+const FILTER_LABEL = { done: 'Релизы', soon: 'Скоро в Steam', wip: 'В разработке', jam: 'Геймджемы', idea: 'Идеи' };
 
 let data = null;
+let filter = 'all';
+const EGG = 23; // ты нашёл пасхалку. их тут 23? нет. но число то самое.
 
 // ── куски разметки ─────────────────────────────────────
 const pad = (n) => String(n).padStart(2, '0');
@@ -53,6 +57,40 @@ function sectionHead(idx, title, count) {
   </div>`;
 }
 
+function projectLinks(p) {
+  const list = Array.isArray(p.links) ? p.links.filter((l) => l && l.url) : [];
+  if (!list.length && p.url) list.push({ label: 'Открыть проект', url: p.url });
+  return list;
+}
+
+function projectGrid(projects) {
+  const list = filter === 'all' ? projects : projects.filter((p) => p.status === filter);
+  return list.length ? list.map(projectCard).join('') : '<p class="empty">Тут пока пусто</p>';
+}
+
+function filters(projects) {
+  const present = Object.keys(STATUS).filter((s) => projects.some((p) => p.status === s));
+  if (present.length < 2) return '';
+  const chip = (key, label, n) =>
+    `<button class="chip ${filter === key ? 'active' : ''}" data-filter="${key}">${label}<span>${pad(n)}</span></button>`;
+  return `<div class="filters reveal" role="toolbar" aria-label="Фильтр проектов">
+    ${chip('all', 'Все', projects.length)}
+    ${present.map((s) => chip(s, FILTER_LABEL[s], projects.filter((p) => p.status === s).length)).join('')}
+  </div>`;
+}
+
+function stackBlock(stack) {
+  const list = (stack || []).filter((s) => s && s.name);
+  if (!list.length) return '';
+  return `<div class="stack-grid">${list.map((s, i) => `
+    <div class="stack-item cut reveal" data-egg="${i === 0 ? EGG : ''}">
+      <span class="stack-idx">${pad(i + 1)}</span>
+      <b>${esc(s.name)}</b>
+      ${s.note ? `<small>${esc(s.note)}</small>` : ''}
+    </div>`).join('')}
+  </div>`;
+}
+
 function projectCard(p) {
   const stack = p.members.length
     ? `<div class="stack" title="${esc(p.members.map((m) => m.name).join(', '))}">${p.members.slice(0, 5).map(avatar).join('')}</div>`
@@ -96,7 +134,10 @@ function renderHome(scrollTo) {
   const name = site.name || 'irenu';
   const years = projects.map((p) => p.year).filter(Boolean);
   const since = years.length ? Math.min(...years) : null;
-  const tickerItems = projects.length ? projects.map((p) => p.title) : [name, 'team', name, 'team'];
+  // Бегущая строка: повторяем названия, пока половина ленты не станет шире любого экрана,
+  // потом удваиваем — анимация сдвигает ровно на половину, и шов не виден.
+  let tickerItems = projects.length ? projects.map((p) => p.title) : [name, 'team'];
+  while (tickerItems.join('').length < 160) tickerItems = tickerItems.concat(tickerItems);
   const ticker = [...tickerItems, ...tickerItems].map((t) => `<span>${esc(t)}</span>`).join('');
   let idx = 0;
 
@@ -120,15 +161,17 @@ function renderHome(scrollTo) {
     </section>
     <div class="ticker" aria-hidden="true"><div class="ticker-track">${ticker}</div></div>
 
-    ${site.about ? `
+    ${site.about || (site.stack || []).length ? `
     <section class="section" id="about">
       ${sectionHead(++idx, 'Кто мы')}
-      <div class="about reveal"><div class="prose">${paragraphs(site.about)}</div></div>
+      ${site.about ? `<div class="about reveal"><div class="prose">${paragraphs(site.about)}</div></div>` : ''}
+      ${stackBlock(site.stack)}
     </section>` : ''}
 
     <section class="section" id="projects">
       ${sectionHead(++idx, 'Проекты', projects.length)}
-      ${projects.length ? `<div class="grid-projects">${projects.map(projectCard).join('')}</div>` : '<p class="empty">Пока пусто</p>'}
+      ${filters(projects)}
+      ${projects.length ? `<div class="grid-projects" id="project-grid">${projectGrid(projects)}</div>` : '<p class="empty">Пока пусто</p>'}
     </section>
 
     <section class="section" id="team">
@@ -143,6 +186,13 @@ function renderHome(scrollTo) {
     </section>` : ''}
   `;
   document.title = name;
+  app.querySelectorAll('[data-filter]').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      filter = btn.dataset.filter;
+      app.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('active', b === btn));
+      document.getElementById('project-grid').innerHTML = projectGrid(projects);
+      afterRender();
+    }));
   afterRender();
   if (scrollTo) document.getElementById(scrollTo)?.scrollIntoView();
   else window.scrollTo(0, 0);
@@ -190,7 +240,7 @@ function renderProject(slug) {
     <div class="project-body">
       <div class="prose">${paragraphs(p.description || p.summary || '')}</div>
       <aside class="side cut">
-        ${p.url ? `<div>${linkButtons([{ label: 'Открыть проект', url: p.url }], true)}</div>` : ''}
+        ${projectLinks(p).length ? `<div>${linkButtons(projectLinks(p), true)}</div>` : ''}
         ${(p.tags || []).length ? `<div><h4>Теги</h4><div class="meta">${tags(p.tags)}</div></div>` : ''}
         ${p.members.length ? `<div><h4>Состав</h4><div class="people">${p.members.map((m) => `
           <a class="person" href="#/member/${encodeURIComponent(m.slug)}">
@@ -223,17 +273,59 @@ function afterRender() {
     el.style.transitionDelay = `${(i % 4) * 60}ms`;
     observer.observe(el);
   });
+  // Страховка: если наблюдатель не сработал, всё, что уже на экране или выше, показываем через 230 мс
+  setTimeout(() => {
+    items.forEach((el) => { if (el.getBoundingClientRect().top < innerHeight) el.classList.add('in'); });
+  }, EGG * 10);
 }
 
 // ── роутер ─────────────────────────────────────────────
 function route() {
   const [page, slug] = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
   document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('active', a.getAttribute('href') === `#/${page}`));
+  if (page === String(EGG)) return render23();
   if (page === 'member') return renderMember(slug);
   if (page === 'project') return renderProject(slug);
   if (['projects', 'team', 'contacts', 'about'].includes(page)) return renderHome(page);
   return renderHome();
 }
+
+// ── 23 ─────────────────────────────────────────────────
+// Пасхалки: #/23, набери «23» на клавиатуре, кликни по логотипу 23 раза, загляни в консоль.
+function render23() {
+  app.innerHTML = `
+    <section class="egg-page">
+      <div class="kicker"><span class="live-dot"></span>secret // ${EGG}</div>
+      <h1 class="egg-num" data-text="${EGG}">${EGG}</h1>
+      <p class="hero-tag">Ты нашёл секретную страницу. Число ${EGG} — наше. Почему — не скажем.</p>
+      <a class="btn primary" href="#/">← Назад</a>
+    </section>`;
+  document.title = `${EGG}`;
+  window.scrollTo(0, 0);
+}
+
+function glitch() {
+  document.body.classList.add('glitch-23');
+  setTimeout(() => document.body.classList.remove('glitch-23'), EGG * 100); // 2.3 c
+}
+
+let typed = '';
+window.addEventListener('keydown', (e) => {
+  if (e.target.closest?.('input, textarea')) return;
+  typed = (typed + e.key).slice(-2);
+  if (typed === String(EGG)) { typed = ''; glitch(); }
+});
+
+let logoClicks = 0;
+document.querySelector('.logo')?.addEventListener('click', (e) => {
+  if (++logoClicks === EGG) { e.preventDefault(); logoClicks = 0; location.hash = `#/${EGG}`; }
+});
+
+console.log(
+  `%c${EGG}%c\nirenu // если ты это читаешь — набери на сайте «${EGG}».`,
+  'font: 700 64px Oswald, sans-serif; color: #ff2e4d;',
+  'font: 14px monospace; color: #8b8b99;'
+);
 
 async function start() {
   try {
