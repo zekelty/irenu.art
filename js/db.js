@@ -13,45 +13,37 @@ export function getClient() {
 }
 
 const DEMO = {
+  // Запасная копия контента (тот же, что в supabase/update-5.sql). Показывается по ?demo
   site: {
-    // Запасная копия контента (тот же, что в supabase/update-2.sql). Показывается по ?demo
     name: 'irenu',
-    tagline: 'Инди-команда из трёх человек. Делаем игры на Unity и Unreal Engine — от геймджемов до релизов в Steam.',
-    about: 'Мы — IRENU. Инди-команда, состоящая из трёх разработчиков: живём в одном городе и вместе делаем игры. Стремимся к созданию хороших игр!!!',
-    stack: [
-      { name: 'Unity 2022', note: 'Основной движок: RKM, KLITTER, Chain и все джемы' },
-      { name: 'Unreal Engine', note: 'Platform Anomaly и Void Raid' },
-      { name: 'C#', note: 'Геймплей и системы на Unity' },
-      { name: '3D-моделирование', note: 'Мирон и Игорь' },
-      { name: 'Геймдизайн', note: 'Николай' },
-      { name: 'Кооп и мультиплеер', note: 'Platform Anomaly, Void Raid, Chain' },
-    ],
+    tagline: 'An indie team of three. We make games in Unity and Unreal Engine — from game jams to Steam releases.',
+    about: 'We are IRENU — an indie team of three developers. We live in the same city and make games together. We strive to make good games!!!',
     contacts: [
-      { label: 'Почта', url: 'mailto:infinityrequiemstudios@gmail.com' },
+      { label: 'Email', url: 'mailto:infinityrequiemstudios@gmail.com' },
       { label: 'Telegram', url: 'https://t.me/macrayb' },
       { label: 'Discord', url: 'https://discord.gg/cPsNJJWkan' },
     ],
   },
   members: [
-    { id: 'm1', slug: 'miron', name: 'Мирон Кондрашов', role: 'Программист · 3D-моделлер', bio: '', stack: ['Unity 2022', 'Unreal Engine', 'C#', '3D-моделирование'], avatar_url: './img/team/miron.webp', links: [], sort: 1 },
-    { id: 'm2', slug: 'nikolay', name: 'Николай Савченко', role: 'Геймдизайнер · программист', bio: '', stack: ['Unity 2022', 'Unreal Engine', 'C#', 'Геймдизайн'], avatar_url: './img/team/nikolay.webp', links: [], sort: 2 },
-    { id: 'm3', slug: 'igor', name: 'Игорь Пищулев', role: 'Программист · 3D-моделлер', bio: '', stack: ['Unity 2022', 'C#', '3D-моделирование'], avatar_url: './img/team/igor.webp', links: [], sort: 3 },
+    { id: 'm1', slug: 'miron', name: 'Miron Kondrashov', role: 'Programmer · 3D artist', bio: 'Developer, 18 years old, making games since I was 14 :)', avatar_url: './img/team/miron.webp', stack: ['Unity 2022', 'Unreal Engine', 'C#', '3D modeling'], links: [{ label: 'Telegram', url: 'https://t.me/macrayb' }, { label: 'GitHub', url: 'https://github.com/zekelty' }], sort: 1 },
+    { id: 'm2', slug: 'nikolay', name: 'Nikolay Savchenko', role: 'Game designer · programmer', bio: '', avatar_url: './img/team/nikolay.webp', stack: ['Unity 2022', 'Unreal Engine', 'C#', 'Game design'], links: [{ label: 'Telegram', url: 'https://t.me/NikolayTapchenko' }, { label: 'GitHub', url: 'https://github.com/Extelder' }], sort: 2 },
+    { id: 'm3', slug: 'igor', name: 'Igor Pishchulev', role: 'Programmer · 3D artist', bio: '', avatar_url: './img/team/igor.webp', stack: ['Unity 2022', 'C#', '3D modeling'], links: [{ label: 'Telegram', url: 'https://t.me/upi_KO' }, { label: 'GitHub', url: 'https://github.com/igoryava' }], sort: 3 },
   ],
   projects: [
-    { id: 'p1', slug: 'simulator-rkm', title: 'Simulator RKM', summary: 'Суровые будни службы по надзору за контентом. Наш первый релиз в Steam.', description: 'Погрузитесь в суровые работы в РКМ.', cover_url: 'https://cdn.akamai.steamstatic.com/steam/apps/3732390/library_hero.jpg', year: 2025, status: 'done', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/3732390/Simulator_RKM/' }, { label: 'GitHub', url: 'https://github.com/Extelder/RKM---REJU-KOMMUNISTOV-MYJIKOV' }], tags: ['Unity 2022', 'Симулятор'], sort: 1 },
-    { id: 'p2', slug: 'void-raid', title: 'Void Raid', summary: 'Кооперативный космический хоррор: рейды по заброшенным кораблям, пока не кончился кислород.', description: 'Релиз в Steam — 4 квартал 2026.', cover_url: 'https://cdn.akamai.steamstatic.com/steam/apps/3961850/library_hero.jpg', year: 2026, status: 'page', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/3961850/Void_Raid/' }], tags: ['Unreal Engine', 'Кооп', 'Хоррор'], sort: 2 },
-    { id: 'p3', slug: 'platform-anomaly', title: 'Platform Anomaly', summary: 'Кооперативный хоррор: ищите аномалии с друзьями — или прячьте их сами.', description: 'Релиз в Steam — 13 января 2027.', cover_url: 'https://cdn.akamai.steamstatic.com/steam/apps/3981970/library_hero.jpg', year: 2027, status: 'page', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/3981970/Platform_Anomaly/' }], tags: ['Unreal Engine', 'Кооп', 'Хоррор'], sort: 3 },
-    { id: 'p4', slug: 'klitter', title: 'KLITTER', summary: 'Арена-экшен в стиле glitchcore: двигайся в ритме — или умри.', description: 'PURE FLOW. ZERO MERCY.', cover_url: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4145970/faf5cd8c81c8289240498629554191b4857de688/header.jpg', year: 2027, status: 'page', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/4145970/KLITTER/' }], tags: ['Unity 2022', 'Экшен', 'Арена'], sort: 4 },
-    { id: 'p5', slug: 'chain', title: 'Chain', summary: 'Кооперативный roguelike-шутер на 1–4 игроков. Вечная ночь, остров и три метра цепи.', description: 'Солнце исчезло. Никто его не ищет.', cover_url: 'https://img.itch.zone/aW1nLzI5MDU2MTAwLnBuZw==/original/xp%2FvFe.png', year: 2026, status: 'soon', links: [{ label: 'Демо на itch.io', url: 'https://nikolaytapchenko.itch.io/chain' }], tags: ['Unity 2022', 'Кооп', 'Roguelike'], sort: 5 },
-    { id: 'p6', slug: 'enjoy-your-coffee', title: 'Enjoy your coffee', summary: 'Кофейная рулетка: собеседование в кофейню, где часть чашек отравлена.', description: 'Mini Jam 204: Café.', cover_url: 'https://img.itch.zone/aW1nLzI1NjA4MTI1LnBuZw==/original/hduLkM.png', year: null, status: 'jam', links: [{ label: 'Играть на itch.io', url: 'https://nikolaytapchenko.itch.io/enjoy-your-cofee' }, { label: 'GitHub', url: 'https://github.com/Extelder/Enjoy-your-coffee' }], tags: ['Unity 2022', 'Хоррор', 'Mini Jam 204'], sort: 6 },
-    { id: 'p7', slug: 'hattravel', title: 'HaTTravel', summary: 'Небольшое immersive-приключение с путешествиями во времени — в духе Gloomwood и Dishonored.', description: 'Mini Jame Gam #38.', cover_url: 'https://img.itch.zone/aW1nLzE5MzczMjM3LmpwZw==/original/Ap4bs%2B.jpg', year: null, status: 'jam', links: [{ label: 'Играть на itch.io', url: 'https://nikolaytapchenko.itch.io/hatman' }], tags: ['Unity 2022', 'Immersive sim'], sort: 7 },
-    { id: 'p8', slug: 'vo-neyrona', title: 'Во НейРона', summary: 'Игрушка про тотальную «отмену» всего — даже погрузки ящиков.', description: 'Barhat Jam.', cover_url: 'https://img.itch.zone/aW1nLzE5MjY3NDEzLmpwZw==/original/%2BgW9QC.jpg', year: null, status: 'jam', links: [{ label: 'Играть на itch.io', url: 'https://nikolaytapchenko.itch.io/voneyrona' }], tags: ['Unity 2022', 'Физика'], sort: 8 },
-    { id: 'p9', slug: 'not-clickbait', title: 'Not Clickbait', summary: 'Очистите свой компьютер от вредоносной программы — через три мини-игры.', description: 'Всероссийский конкурс «Начни игру».', cover_url: 'https://img.itch.zone/aW1nLzEzNTkyNTQwLnBuZw==/original/Dsvjwp.png', year: null, status: 'jam', links: [{ label: 'Играть на itch.io', url: 'https://dvdglnv.itch.io/not-clickbait' }], tags: ['Unity 2022', 'Мини-игры'], sort: 9 },
+    { id: 'p1', slug: 'simulator-rkm', title: 'Simulator RKM', summary: 'The harsh daily grind of a content-moderation agency. Our first Steam release.', description: 'Released on Steam on October 22, 2025.', cover_url: 'https://cdn.akamai.steamstatic.com/steam/apps/3732390/library_hero.jpg', year: 2025, status: 'done', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/3732390/Simulator_RKM/' }, { label: 'GitHub', url: 'https://github.com/Extelder/RKM---REJU-KOMMUNISTOV-MYJIKOV' }], tags: ['Unity 2022', 'Simulator'], sort: 1 },
+    { id: 'p3', slug: 'platform-anomaly', title: 'Platform Anomaly', summary: 'Co-op horror: hunt for anomalies with friends — or hide them yourself.', description: 'Coming to Steam on January 13, 2027.', cover_url: 'https://cdn.akamai.steamstatic.com/steam/apps/3981970/library_hero.jpg', year: 2027, status: 'page', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/3981970/Platform_Anomaly/' }], tags: ['Unreal Engine', 'Co-op', 'Horror'], sort: 2 },
+    { id: 'p4', slug: 'klitter', title: 'KLITTER', summary: 'A glitchcore arena action game: keep moving or die.', description: 'PURE FLOW. ZERO MERCY.', cover_url: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4145970/faf5cd8c81c8289240498629554191b4857de688/header.jpg', year: 2027, status: 'page', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/4145970/KLITTER/' }], tags: ['Unity 2022', 'Action', 'Arena'], sort: 3 },
+    { id: 'p5', slug: 'chain', title: 'Chain', summary: 'A 1–4 player co-op roguelike FPS. Endless night, an island and three meters of chain.', description: 'The sun is gone. Nobody is looking for it.', cover_url: 'https://img.itch.zone/aW1nLzI5MDU2MTAwLnBuZw==/original/xp%2FvFe.png', year: 2026, status: 'soon', links: [{ label: 'Demo on itch.io', url: 'https://nikolaytapchenko.itch.io/chain' }, { label: 'GitHub', url: 'https://github.com/Extelder/Chain' }], tags: ['Unity 2022', 'Co-op', 'Roguelike'], sort: 4 },
+    { id: 'p6', slug: 'enjoy-your-coffee', title: 'Enjoy your coffee', summary: 'Coffee roulette: a job interview at a coffee shop where some of the cups are poisoned.', description: 'Made for Mini Jam 204: Café.', cover_url: 'https://img.itch.zone/aW1nLzI1NjA4MTI1LnBuZw==/original/hduLkM.png', year: null, status: 'jam', links: [{ label: 'Play on itch.io', url: 'https://nikolaytapchenko.itch.io/enjoy-your-cofee' }, { label: 'GitHub', url: 'https://github.com/Extelder/Enjoy-your-coffee' }], tags: ['Unity 2022', 'Horror', 'Mini Jam 204'], sort: 5 },
+    { id: 'p7', slug: 'hattravel', title: 'HaTTravel', summary: 'A small immersive time-travel adventure in the spirit of Gloomwood and Dishonored.', description: 'Made for Mini Jame Gam #38.', cover_url: 'https://img.itch.zone/aW1nLzE5MzczMjM3LmpwZw==/original/Ap4bs%2B.jpg', year: null, status: 'jam', links: [{ label: 'Play on itch.io', url: 'https://nikolaytapchenko.itch.io/hatman' }], tags: ['Unity 2022', 'Immersive sim', 'Mini Jame Gam #38'], sort: 6 },
+    { id: 'p8', slug: 'vo-neyrona', title: 'Во НейРона', summary: 'A little game about the total "cancellation" of everything — even loading boxes.', description: 'Made for Barhat Jam.', cover_url: 'https://img.itch.zone/aW1nLzE5MjY3NDEzLmpwZw==/original/%2BgW9QC.jpg', year: null, status: 'jam', links: [{ label: 'Play on itch.io', url: 'https://nikolaytapchenko.itch.io/voneyrona' }], tags: ['Unity 2022', 'Physics', 'Barhat Jam'], sort: 7 },
+    { id: 'p9', slug: 'not-clickbait', title: 'Not Clickbait', summary: 'Clean your computer of malware — through three mini-games.', description: 'Made for a game jam held as part of the All-Russian contest "Start the Game".', cover_url: 'https://img.itch.zone/aW1nLzEzNTkyNTQwLnBuZw==/original/Dsvjwp.png', year: null, status: 'jam', links: [{ label: 'Play on itch.io', url: 'https://dvdglnv.itch.io/not-clickbait' }], tags: ['Unity 2022', 'Mini-games', 'Start the Game'], sort: 8 },
+    { id: 'p2', slug: 'void-raid', title: 'Void Raid', summary: 'A co-op space horror about raiding derelict ships before your oxygen runs out.', description: 'Coming to Steam in Q4 2026.', cover_url: 'https://cdn.akamai.steamstatic.com/steam/apps/3961850/library_hero.jpg', year: 2026, status: 'page', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/3961850/Void_Raid/' }], tags: ['Unreal Engine', 'Co-op', 'Horror'], sort: 99 },
   ],
   // кто над чем работал: m1 Мирон, m2 Николай, m3 Игорь
   links: Object.entries({
     p1: ['m1', 'm2', 'm3'], p2: ['m1'], p3: ['m1', 'm2'], p4: ['m3', 'm2'], p5: ['m1', 'm2', 'm3'],
-    p6: ['m1', 'm2', 'm3'], p7: ['m3', 'm2'], p8: ['m3', 'm2'], p9: ['m1', 'm2'],
+    p6: ['m1', 'm2', 'm3'], p7: ['m3', 'm2'], p8: ['m2'], p9: ['m1', 'm2'],
   }).flatMap(([p, ms]) => ms.map((m) => ({ project_id: p, member_id: m }))),
 };
 
