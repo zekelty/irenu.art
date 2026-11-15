@@ -104,18 +104,6 @@ function filters(projects) {
   </div>`;
 }
 
-function stackBlock(stack) {
-  const list = (stack || []).filter((s) => s && s.name);
-  if (!list.length) return '';
-  return `<div class="stack-grid">${list.map((s, i) => `
-    <div class="stack-item cut reveal" data-egg="${i === 0 ? EGG : ''}">
-      <span class="stack-idx">${pad(i + 1)}</span>
-      <b>${esc(s.name)}</b>
-      ${s.note ? `<small>${esc(s.note)}</small>` : ''}
-    </div>`).join('')}
-  </div>`;
-}
-
 function projectCard(p) {
   const stack = p.members.length
     ? `<div class="stack" title="${esc(p.members.map((m) => m.name).join(', '))}">${p.members.slice(0, 5).map(avatar).join('')}</div>`
@@ -179,28 +167,22 @@ function renderHome(scrollTo) {
         </div>
         <div class="hero-cta">
           <a class="btn primary" href="#/projects">Проекты</a>
-          <a class="btn" href="#/team">Состав</a>
+          <a class="btn" href="#/team">Кто мы</a>
         </div>
       </div>
     </section>
     <div class="ticker" aria-hidden="true"><div class="ticker-track">${ticker}</div></div>
 
-    ${site.about || (site.stack || []).length ? `
-    <section class="section" id="about">
-      ${sectionHead(++idx, 'Кто мы')}
+    <section class="section" id="team">
+      ${sectionHead(++idx, 'Кто мы', members.length)}
       ${site.about ? `<div class="about reveal"><div class="prose">${paragraphs(site.about)}</div></div>` : ''}
-      ${stackBlock(site.stack)}
-    </section>` : ''}
+      ${members.length ? `<div class="grid-team">${members.map(playerCard).join('')}</div>` : ''}
+    </section>
 
     <section class="section" id="projects">
       ${sectionHead(++idx, 'Проекты', projects.length)}
       ${filters(projects)}
       ${projects.length ? `<div class="grid-projects" id="project-grid">${projectGrid(projects)}</div>` : '<p class="empty">Пока пусто</p>'}
-    </section>
-
-    <section class="section" id="team">
-      ${sectionHead(++idx, 'Состав', members.length)}
-      ${members.length ? `<div class="grid-team">${members.map(playerCard).join('')}</div>` : '<p class="empty">Пока пусто</p>'}
     </section>
 
     ${(site.contacts || []).length ? `
@@ -233,7 +215,7 @@ function renderMember(slug) {
   if (i === -1) return renderNotFound();
   const m = data.members[i];
   app.innerHTML = `
-    <a class="back" href="#/team">← Состав</a>
+    <a class="back" href="#/team">← Кто мы</a>
     <section class="profile">
       <div class="profile-photo cut">${media(m.avatar_url, m.slug || m.name, initials(m.name), m.name)}</div>
       <div>
@@ -241,6 +223,11 @@ function renderMember(slug) {
         <h1>${esc(m.name)}</h1>
         ${m.role ? `<p style="margin:16px 0 0"><span class="player-role">${esc(m.role)}</span></p>` : ''}
         ${m.bio ? `<div class="prose">${paragraphs(m.bio)}</div>` : ''}
+        ${(m.stack || []).length ? `
+        <div class="profile-stack">
+          <h4>Стек</h4>
+          <div class="skills">${m.stack.map((s) => `<span class="skill">${esc(s)}</span>`).join('')}</div>
+        </div>` : ''}
         ${linkButtons(m.links)}
       </div>
     </section>
@@ -316,7 +303,8 @@ function route() {
   if (page === String(EGG)) return render23();
   if (page === 'member') return renderMember(slug);
   if (page === 'project') return renderProject(slug);
-  if (['projects', 'team', 'contacts', 'about'].includes(page)) return renderHome(page);
+  if (page === 'about') return renderHome('team');
+  if (['projects', 'team', 'contacts'].includes(page)) return renderHome(page);
   return renderHome();
 }
 

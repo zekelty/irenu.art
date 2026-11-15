@@ -17,8 +17,7 @@ const DEMO = {
     // Запасная копия контента (тот же, что в supabase/update-2.sql). Показывается по ?demo
     name: 'irenu',
     tagline: 'Инди-команда из трёх человек. Делаем игры на Unity и Unreal Engine — от геймджемов до релизов в Steam.',
-    about:
-      'Мы — IRENU. Трое разработчиков, которые вместе делают игры: кооперативные хорроры, экшены, симуляторы и безумные прототипы на геймджемах.\n\nКод пишут все. Мирон и Игорь ещё и делают 3D-модели, Николай отвечает за геймдизайн. Над каждым проектом работаем вместе — от первой идеи до релиза.',
+    about: 'Мы — IRENU. Инди-команда, состоящая из трёх разработчиков: живём в одном городе и вместе делаем игры. Стремимся к созданию хороших игр!!!',
     stack: [
       { name: 'Unity 2022', note: 'Основной движок: RKM, KLITTER, Chain и все джемы' },
       { name: 'Unreal Engine', note: 'Platform Anomaly и Void Raid' },
@@ -34,9 +33,9 @@ const DEMO = {
     ],
   },
   members: [
-    { id: 'm1', slug: 'miron', name: 'Мирон Кондрашов', role: 'Программист · 3D-моделлер', bio: '', avatar_url: './img/team/miron.webp', links: [], sort: 1 },
-    { id: 'm2', slug: 'nikolay', name: 'Николай Савченко', role: 'Геймдизайнер', bio: '', avatar_url: './img/team/nikolay.webp', links: [], sort: 2 },
-    { id: 'm3', slug: 'igor', name: 'Игорь Пищулев', role: 'Программист · 3D-моделлер', bio: '', avatar_url: './img/team/igor.webp', links: [], sort: 3 },
+    { id: 'm1', slug: 'miron', name: 'Мирон Кондрашов', role: 'Программист · 3D-моделлер', bio: '', stack: ['Unity 2022', 'Unreal Engine', 'C#', '3D-моделирование'], avatar_url: './img/team/miron.webp', links: [], sort: 1 },
+    { id: 'm2', slug: 'nikolay', name: 'Николай Савченко', role: 'Геймдизайнер · программист', bio: '', stack: ['Unity 2022', 'Unreal Engine', 'C#', 'Геймдизайн'], avatar_url: './img/team/nikolay.webp', links: [], sort: 2 },
+    { id: 'm3', slug: 'igor', name: 'Игорь Пищулев', role: 'Программист · 3D-моделлер', bio: '', stack: ['Unity 2022', 'C#', '3D-моделирование'], avatar_url: './img/team/igor.webp', links: [], sort: 3 },
   ],
   projects: [
     { id: 'p1', slug: 'simulator-rkm', title: 'Simulator RKM', summary: 'Суровые будни службы по надзору за контентом. Наш первый релиз в Steam.', description: 'Погрузитесь в суровые работы в РКМ.', cover_url: 'https://cdn.akamai.steamstatic.com/steam/apps/3732390/library_hero.jpg', year: 2025, status: 'done', links: [{ label: 'Steam', url: 'https://store.steampowered.com/app/3732390/Simulator_RKM/' }, { label: 'GitHub', url: 'https://github.com/Extelder/RKM---REJU-KOMMUNISTOV-MYJIKOV' }], tags: ['Unity 2022', 'Симулятор'], sort: 1 },

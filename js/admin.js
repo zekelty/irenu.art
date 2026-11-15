@@ -196,7 +196,6 @@ async function editSite() {
         ${field('Название', `<input type="text" name="name" value="${esc(s.name)}" required>`)}
         ${field('Подзаголовок', `<input type="text" name="tagline" value="${esc(s.tagline)}">`, 'Одна строка под большим названием на главной')}
         ${field('Кто мы', `<textarea name="about" rows="8">${esc(s.about)}</textarea>`, 'Пустая строка — новый абзац')}
-        ${field('Стек', `<textarea name="stack" rows="6" placeholder="Unity 2022 | Основной движок">${esc((s.stack || []).map((x) => (x.note ? `${x.name} | ${x.note}` : x.name)).join('\n'))}</textarea>`, 'Плитки в блоке «Кто мы». По одной на строку: <code>Название | пояснение</code>')}
         ${field('Контакты', `<textarea name="contacts" rows="4" placeholder="Telegram | https://t.me/...">${esc(linksToText(s.contacts))}</textarea>`, 'По одной на строку: <code>Название | ссылка</code>')}
         <p class="error"></p>
         <div class="actions"><button class="btn primary" type="submit">Сохранить</button><a class="btn" href="./" target="_blank">Открыть сайт ↗</a></div>
@@ -212,7 +211,6 @@ async function editSite() {
         tagline: form.tagline.value.trim(),
         about: form.about.value.trim(),
         contacts: textToLinks(form.contacts.value),
-        stack: textToLinks(form.stack.value).map((l) => ({ name: l.label, note: l.label === l.url ? '' : l.url })),
         updated_at: new Date().toISOString(),
       }));
       toast('Сохранено');
@@ -250,6 +248,7 @@ async function editMember(id) {
         </div>
         ${imageField('avatar_url', m.avatar_url, 'members', true)}
         ${field('О себе', `<textarea name="bio" rows="6">${esc(m.bio)}</textarea>`, 'Пустая строка — новый абзац')}
+        ${field('Стек', `<input type="text" name="stack" value="${esc((m.stack || []).join(', '))}" placeholder="Unity 2022, C#, Blender">`, 'Через запятую. Показывается в профиле участника')}
         ${field('Ссылки', `<textarea name="links" rows="3" placeholder="GitHub | https://github.com/...">${esc(linksToText(m.links))}</textarea>`, 'По одной на строку: <code>Название | ссылка</code>')}
         <div class="row">
           ${field('Адрес страницы (slug)', `<input type="text" name="slug" value="${esc(m.slug)}" required pattern="[a-z0-9-]+">`, 'Латиница, цифры и дефис. Будет irenu.art/#/member/<b>slug</b>')}
@@ -274,6 +273,7 @@ async function editMember(id) {
         name: form.name.value.trim(),
         role: form.role.value.trim(),
         bio: form.bio.value.trim(),
+        stack: form.stack.value.split(',').map((t) => t.trim()).filter(Boolean),
         avatar_url: form.avatar_url.value.trim(),
         links: textToLinks(form.links.value),
         slug: slugify(form.slug.value),
