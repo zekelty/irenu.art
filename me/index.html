@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- irenu // me // 23 — личный раздел. Добавь на экран «Домой»: Поделиться → «На экран „Домой“» -->
+<html lang="ru" data-egg="23">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>me</title>
+  <meta name="theme-color" content="#07070a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="me">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="me.css">
+</head>
+<body class="me">
+  <header class="me-top">
+    <a id="back" class="me-back" href="#/" hidden aria-label="Назад">‹</a>
+    <h1 id="title">me</h1>
+    <span id="saved" class="me-saved" aria-live="polite"></span>
+    <span id="action"></span>
+  </header>
+
+  <main id="app">
+    <div class="loading">Загружаем…</div>
+  </main>
+
+  <nav id="tabs" class="me-tabs" hidden>
+    <a href="#/" data-tab="boards">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h5v16H3zM10 4h5v10h-5zM17 4h4v13h-4z" fill="currentColor"/></svg>
+      Доски
+    </a>
+    <a href="#/tests" data-tab="tests">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h2v2H4zm4 0h12v2H8zM4 11h2v2H4zm4 0h12v2H8zm-4 6h2v2H4zm4 0h12v2H8z" fill="currentColor"/></svg>
+      Тесты
+    </a>
+    <a href="#/more" data-tab="more">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
+      Ещё
+    </a>
+  </nav>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script type="module" src="me.js"></script>
+</body>
+</html>
