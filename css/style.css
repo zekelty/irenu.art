@@ -9,7 +9,7 @@
   --line: #24242e;
   --text: #f4f4f6;
   --muted: #8b8b99;
-  --accent: #ff2e4d;          /* главный цвет команды */
+  --accent: #ff004f;          /* главный цвет команды — как в логотипе */
   --accent-2: #ff7a1a;        /* для градиентов */
   --accent-ink: #ffffff;
   --danger: #ff5c5c;
@@ -61,10 +61,7 @@ a { color: inherit; }
   font: 700 24px/1 var(--display); text-decoration: none; text-transform: uppercase; letter-spacing: .06em;
   display: inline-flex; align-items: center; gap: 10px;
 }
-.logo::before {
-  content: ''; width: 18px; height: 18px; background: var(--accent);
-  clip-path: polygon(0 0, 100% 0, 100% 60%, 60% 100%, 0 100%);
-}
+.logo img { display: block; height: 38px; width: auto; }
 .nav { display: flex; gap: 4px; flex-wrap: wrap; }
 .nav a {
   position: relative; text-decoration: none; color: var(--muted);
@@ -134,6 +131,11 @@ main { flex: 1; width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 0 
 .stat b { display: block; font: 700 clamp(36px, 5vw, 56px)/1 var(--display); color: var(--text); }
 .stat span { font: 500 12px/1 var(--display); text-transform: uppercase; letter-spacing: .2em; color: var(--muted); }
 .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* логотип на главном экране + бледное «эхо» под ним */
+.hero-logo { position: relative; margin: 26px 0 0; isolation: isolate; }
+.hero-logo img { display: block; width: min(100%, 760px); height: auto; }
+.hero-logo .echo { position: absolute; left: 0; top: 46%; z-index: -1; opacity: .07; pointer-events: none; }
 
 /* бегущая строка */
 .ticker {
@@ -504,14 +506,14 @@ body.glitch-23::after {
 
 .scr.dvd { background: #000; }
 .scr.dvd b {
-  position: absolute; left: 0; top: 0; font-size: 28px; padding: 2px 8px; border: 2px solid currentColor; color: #ff2e4d;
+  position: absolute; left: 0; top: 0; font-size: 28px; padding: 2px 8px; border: 2px solid currentColor; color: #ff004f;
   animation: dvd-x 4.6s linear infinite alternate, dvd-y 2.3s linear infinite alternate, dvd-c 6.9s steps(3) infinite;
 }
 @keyframes dvd-x { to { left: calc(100% - 64px); } }
 @keyframes dvd-y { to { top: calc(100% - 42px); } }
 @keyframes dvd-c { 33% { color: #00e5ff; } 66% { color: #ffd23f; } }
 
-.scr.hearts { background: linear-gradient(135deg, #ff2e4d, #ff7a1a); }
+.scr.hearts { background: linear-gradient(135deg, #ff004f, #ff7a1a); }
 .scr.hearts b { animation: beat .46s ease-in-out infinite alternate; }
 @keyframes beat { to { transform: scale(1.15); } }
 

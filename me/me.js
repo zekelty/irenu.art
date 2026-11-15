@@ -177,7 +177,7 @@ function notFound(text, backHref) {
 }
 
 // ═══════════════════════ ДОСКИ ═══════════════════════
-const COLORS = ['', '#ff2e4d', '#ff7a1a', '#ffd23f', '#3ddc84', '#66c0f4', '#a77bff'];
+const COLORS = ['', '#ff004f', '#ff7a1a', '#ffd23f', '#3ddc84', '#66c0f4', '#a77bff'];
 const newBoardData = () => ({
   columns: [
     { id: uid(), title: 'Надо сделать', cards: [] },

@@ -187,7 +187,10 @@ function renderHome(scrollTo) {
     ${demo ? `<p class="notice"><b>Demo mode.</b> Sample data for previewing the design — the live data is on the <a href="./">home page</a>.</p>` : ''}
     <section class="hero">
       <div class="kicker"><span class="live-dot"></span>Team${since ? ` // since ${esc(since)}` : ''}</div>
-      <h1 class="hero-title"><span class="fill">${esc(name)}</span><span class="outline" aria-hidden="true">${esc(name)}</span></h1>
+      <h1 class="hero-logo">
+        <img src="img/brand/irenu-logo-white.svg" alt="${esc(name)}" width="760" height="241">
+        <img class="echo" src="img/brand/irenu-logo-mono-white.svg" alt="" aria-hidden="true">
+      </h1>
       ${site.tagline ? `<p class="hero-tag">${esc(site.tagline)}</p>` : ''}
       <div class="hero-row">
         <div class="stats">
@@ -397,7 +400,7 @@ document.querySelector('.logo')?.addEventListener('click', (e) => {
 
 console.log(
   `%c${EGG}%c\nirenu // if you're reading this, type "${EGG}" on the site.`,
-  'font: 700 64px Oswald, sans-serif; color: #ff2e4d;',
+  'font: 700 64px Oswald, sans-serif; color: #ff004f;',
   'font: 14px monospace; color: #8b8b99;'
 );
 
