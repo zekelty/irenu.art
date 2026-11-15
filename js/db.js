@@ -41,8 +41,10 @@ const DEMO = {
 
 const bySort = (a, b) => (a.sort ?? 0) - (b.sort ?? 0) || String(a.created_at ?? '').localeCompare(String(b.created_at ?? ''));
 
+const forceDemo = new URLSearchParams(location.search).has('demo'); // ?demo — посмотреть дизайн на примерах
+
 export async function loadAll() {
-  const sb = await getClient();
+  const sb = forceDemo ? null : await getClient();
   let raw;
   if (!sb) {
     raw = DEMO;
