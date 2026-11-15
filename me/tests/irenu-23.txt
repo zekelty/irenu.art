@@ -1,0 +1,31 @@
+title: Пример: знаешь ли ты irenu?
+description: Тест-пример от Claude — проверка, что тесты из репозитория доходят до приложения
+---
+? На каком движке сделан Void Raid?
++ Unreal Engine
+- Unity 2022
+- Godot
+! Platform Anomaly — тоже на Unreal, остальное на Unity 2022.
+
+? Какой наш первый релиз в Steam?
++ Simulator RKM
+- KLITTER
+- Chain
+- Platform Anomaly
+
+? Сколько человек в команде?
++ 3
+- 2
+- 4
+- 23
+
+? На каком геймджеме сделали Enjoy your coffee?
++ Mini Jam 204: Café
+- Barhat Jam
+- Mini Jame Gam #38
+
+? Что произойдёт, если набрать «23» на главной сайта?
++ Сайт глюкнет
+- Откроется админка
+- Ничего
+! А ещё есть секретная страница irenu.art/#/23 со стеной теликов.

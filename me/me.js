@@ -460,10 +460,67 @@ const SAMPLE = `? Сколько будет 2 + 2?
 - 42
 - 7`;
 
+// ── тесты из репозитория (папка me/tests) ──────────────
+// Claude кладёт файлы тестов в me/tests/*.txt и их список в me/tests/index.json.
+// Здесь они сами попадают в базу: новые добавляются, изменённые обновляются, удалённые из списка — удаляются.
+// Формат файла: шапка «title: …» / «description: …», строка «---», дальше вопросы в обычном формате.
+let syncedAt = 0;
+let syncWarned = false;
+
+function parseTestFile(text, file) {
+  const t = String(text).replace(/\r/g, '');
+  const meta = {};
+  let body = t;
+  const sep = t.search(/^---\s*$/m);
+  if (sep !== -1) {
+    t.slice(0, sep).split('\n').forEach((l) => {
+      const m = l.match(/^\s*(\w+)\s*:\s*(.*)$/);
+      if (m) meta[m[1].toLowerCase()] = m[2].trim();
+    });
+    body = t.slice(sep).replace(/^---\s*\n?/, '');
+  }
+  return { title: meta.title || file.replace(/\.\w+$/, ''), description: meta.description || '', source: body.trim() };
+}
+
+async function syncRepoTests(force = false) {
+  if (!force && Date.now() - syncedAt < 60_000) return; // не чаще раза в минуту
+  syncedAt = Date.now();
+  let files;
+  try {
+    const r = await fetch(`tests/index.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) return;
+    files = (await r.json()).filter((f) => typeof f === 'string' && f.trim());
+  } catch { return; }
+  const existing = await q(sb.from('me_tests').select('id,source_key,title,description,source').not('source_key', 'is', null));
+  const byKey = new Map(existing.map((t) => [t.source_key, t]));
+  for (const file of files) {
+    try {
+      const r = await fetch(`tests/${encodeURIComponent(file)}?t=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const t = parseTestFile(await r.text(), file);
+      const cur = byKey.get(file);
+      if (!cur) await q(sb.from('me_tests').insert({ ...t, source_key: file }));
+      else if (cur.title !== t.title || cur.description !== t.description || cur.source !== t.source) {
+        await q(sb.from('me_tests').update({ ...t, updated_at: new Date().toISOString() }).eq('id', cur.id));
+      }
+      byKey.delete(file);
+    } catch (e) { console.warn('test sync', file, e); }
+  }
+  for (const t of byKey.values()) {
+    try { await q(sb.from('me_tests').delete().eq('id', t.id)); } catch { /* ничего */ }
+  }
+}
+
 async function viewTests() {
   header('Тесты');
+  try {
+    await syncRepoTests();
+  } catch (e) {
+    console.warn(e);
+    if (!syncWarned) { syncWarned = true; toast('Тесты от Claude не подтянулись — запусти supabase/update-7.sql', true); }
+  }
   const [tests, attempts] = await Promise.all([
-    q(sb.from('me_tests').select('id,title,source,updated_at').order('updated_at', { ascending: false })),
+    q(sb.from('me_tests').select('*').order('updated_at', { ascending: false })),
     q(sb.from('me_attempts').select('test_id,score,total')),
   ]);
   const best = {};
@@ -477,6 +534,7 @@ async function viewTests() {
         const n = parseTest(t.source).questions.length;
         const b = best[t.id];
         return `<a class="tile cut" href="#/test/${t.id}">
+          ${t.source_key ? '<span class="from-claude">от Claude</span>' : ''}
           <b>${esc(t.title)}</b>
           <small>${n} вопрос${n % 10 === 1 && n % 100 !== 11 ? '' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'а' : 'ов'}${b != null ? ` · лучший ${Math.round(b * 100)}%` : ' · ещё не проходил'}</small>
           <span class="bar"><i style="width:${b != null ? Math.round(b * 100) : 0}%"></i></span>
@@ -505,7 +563,9 @@ async function viewTest(id) {
       </div>
       <div class="more-list">
         <a class="btn primary block" href="#/test/${id}/run">Пройти тест</a>
-        <a class="btn block" href="#/test/${id}/edit">Редактировать</a>
+        ${t.source_key
+          ? '<p class="hint" style="margin:6px 0 0">Этот тест сделал Claude. Чтобы поменять или удалить — попроси Claude, он обновит файл в репозитории.</p>'
+          : `<a class="btn block" href="#/test/${id}/edit">Редактировать</a>`}
       </div>
     </div>
     ${attempts.length ? `
@@ -520,6 +580,7 @@ async function viewTestEdit(id) {
   const isNew = id === 'new';
   const t = isNew ? { title: '', description: '', source: SAMPLE } : await q(sb.from('me_tests').select('*').eq('id', id).maybeSingle());
   if (!t) return notFound('Тест не найден', '#/tests');
+  if (t.source_key) return notFound('Этот тест сделал Claude — правки через него', `#/test/${id}`);
   header(isNew ? 'Новый тест' : 'Редактор', isNew ? '#/tests' : `#/test/${id}`);
   $app.innerHTML = `
     <form class="stack-form" id="f">

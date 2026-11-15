@@ -86,6 +86,10 @@ body.me main#app {
 .tile small { color: var(--muted); font-size: 14px; }
 .tile .bar { height: 4px; background: var(--bg-3); margin-top: auto; }
 .tile .bar i { display: block; height: 100%; background: var(--accent); }
+.from-claude {
+  align-self: flex-start; padding: 4px 8px; background: rgba(217,119,87,.16); color: #e8936f;
+  font: 600 10px/1 var(--display); text-transform: uppercase; letter-spacing: .16em;
+}
 .tile.add { align-items: center; justify-content: center; border: 1px dashed var(--line); background: transparent; color: var(--muted); }
 .tile.add::before { display: none; }
 .tile.add b { font-size: 16px; color: var(--muted); }
