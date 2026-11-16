@@ -5,7 +5,7 @@
 
 - `index.html` + `js/app.js` — публичный сайт, **на английском**. Контент берётся из таблиц `site`, `members`, `projects`, `project_members`.
 - `img/brand/` — логотипы команды (SVG: знак, надпись, лого-локапы, иконка приложения), `og-image.png` — превью ссылок. Фирменный красный `#FF004F`.
-- `js/socials.js` — соцсети команды (TikTok, YouTube, X, Tumblr, TG-канал) — правятся в файле, без SQL. Иконки — `js/icons.js` (Simple Icons).
+- `js/socials.js` — соцсети команды (TG-канал, YouTube, TikTok, X, Tumblr, Reddit) — правятся в файле, без SQL. Иконки — `js/icons.js` (Simple Icons).
 - `admin.html` + `js/admin.js` — админка, на русском. Доступ: пользователь в Supabase Auth + его почта в таблице `editors`.
 - `me/` — личный раздел (PWA для iPhone), на русском: доски (`me_boards`) и тесты (`me_tests`, `me_attempts`). Каждый видит только свои записи.
 - `supabase/*.sql` — миграции, пользователь запускает их руками в SQL Editor (по порядку, все идемпотентны).

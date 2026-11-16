@@ -27,6 +27,7 @@ function iconKey(url) {
   if (u.includes('tiktok.com')) return 'tiktok';
   if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
   if (u.includes('tumblr.com')) return 'tumblr';
+  if (u.includes('reddit.com')) return 'reddit';
   if (/\/\/(www\.)?(x|twitter)\.com\//.test(u)) return 'x';
   return '';
 }
@@ -48,6 +49,8 @@ function prettyContact(url) {
   if (xh) return '@' + xh[1];
   const tb = u.match(/tumblr\.com\/(?:blog\/)?([\w-]+)/i);
   if (tb) return tb[1];
+  const rd = u.match(/reddit\.com\/(?:user|u)\/([\w-]+)/i);
+  if (rd) return 'u/' + rd[1];
   return u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
 }
 
