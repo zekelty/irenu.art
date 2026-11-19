@@ -56,7 +56,7 @@ function compareLatest(days) {
   return '<p class="hint">Для последнего тяжёлого подхода пока нет предыдущей записи с таким же весом или числом повторов и таким же RIR.</p>';
 }
 
-export function renderTraining(app, { workouts, historyMissing }) {
+export function renderTraining(app, { workouts, historyMissing }, fromCoach = false) {
   const exercises = byExercise(workouts);
   app.innerHTML = `
     <div class="me-sections">
@@ -80,6 +80,7 @@ export function renderTraining(app, { workouts, historyMissing }) {
     const record = topSet(all);
     const last = days.find(({ top }) => top)?.top ?? null;
     const exercisePath = `#/coach/${esc(encodeURIComponent(exercise.title))}`;
+    const origin = fromCoach ? '/coach' : '';
     const bestByReps = new Map();
     for (const row of all) {
       if (row.weight_kg === null) continue;
@@ -94,8 +95,8 @@ export function renderTraining(app, { workouts, historyMissing }) {
       <section class="me-panel me-sections exercise-help">
         <h2>Спросить Толика по журналу</h2>
         <div class="row-btns">
-          <a class="btn primary" href="${exercisePath}/weight">Какой вес взять сегодня?</a>
-          <a class="btn" href="${exercisePath}/progress">Как прогрессировать?</a>
+          <a class="btn primary" href="${exercisePath}/weight${origin}">Какой вес взять сегодня?</a>
+          <a class="btn" href="${exercisePath}/progress${origin}">Как прогрессировать?</a>
         </div>
       </section>
       <section class="me-panel">

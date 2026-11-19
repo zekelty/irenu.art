@@ -36,7 +36,7 @@ export function mountCoach(app, sb, userId, { exercise = '', mode } = {}) {
   app.innerHTML = `
     <div class="me-sections coach">
       <p class="hint" data-connection role="status">Проверяю подключение…</p>
-      <a class="btn block" href="#/training">Журнал и прогресс тренировок</a>
+      <a class="btn block" href="#/training/coach">Журнал и прогресс тренировок</a>
       ${exercise ? `<p class="hint coach-focus">История упражнения: <b>${esc(exercise)}</b> · <a href="#/coach">Все упражнения</a></p>` : ''}
       <div class="coach-log" role="log" aria-label="Переписка с Толиком"></div>
       <div data-draft></div>

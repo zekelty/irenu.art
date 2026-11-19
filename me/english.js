@@ -1,3 +1,5 @@
+import { WEEK_LESSONS } from './english-week.js';
+
 export const COURSE_PREFIX = 'course/english/';
 
 export const ENGLISH = [
@@ -124,6 +126,8 @@ export const ENGLISH = [
     ],
   },
 ];
+
+export const ENGLISH_LESSONS = [...ENGLISH.flatMap((group) => group.lessons), ...WEEK_LESSONS];
 
 export function lessonSource(lesson) {
   return lesson.quiz.map(([prompt, correct, firstWrong, secondWrong, explanation]) =>

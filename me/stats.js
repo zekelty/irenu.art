@@ -1,5 +1,5 @@
 import { esc } from '../js/util.js';
-import { COURSE_PREFIX, ENGLISH } from './english.js';
+import { COURSE_PREFIX, ENGLISH_LESSONS } from './english.js';
 
 const percent = (score, total) => total ? Math.round(100 * score / total) : 0;
 const shortDate = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' });
@@ -56,7 +56,7 @@ function metrics(items) {
 
 export function renderStats(app, { boards, tests, attempts }) {
   const testsById = new Map(tests.map((test) => [test.id, test]));
-  const lessons = ENGLISH.flatMap((group) => group.lessons);
+  const lessons = ENGLISH_LESSONS;
   const lessonKeys = new Set(lessons.map((lesson) => COURSE_PREFIX + lesson.slug));
   const allSummaries = testSummary(attempts);
   const completed = tests.filter((test) => lessonKeys.has(test.source_key) && allSummaries.get(test.id)?.best >= 80).length;

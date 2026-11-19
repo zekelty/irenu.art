@@ -2,7 +2,8 @@
 // Доступ только после входа (тот же логин, что в админке). Данные видит только владелец (RLS). // 23
 import { getClient, isConfigured } from '../js/db.js';
 import { esc } from '../js/util.js';
-import { ENGLISH, COURSE_PREFIX, lessonSource } from './english.js';
+import { ENGLISH, ENGLISH_LESSONS, COURSE_PREFIX, lessonSource } from './english.js';
+import { WEEK } from './english-week.js';
 import { renderStats, testSummary } from './stats.js';
 import { callMeAssistant, mountCoach } from './coach.js';
 import { mountChat } from './chat.js';
@@ -176,7 +177,7 @@ function enter() {
 // ── роутер ─────────────────────────────────────────────
 function route() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
-  const [page, id, sub] = parts;
+  const [page, id, sub, from] = parts;
   const hash = location.hash;
   const currentUser = user?.id;
   const isCurrent = () => location.hash === hash && user?.id === currentUser;
@@ -188,9 +189,13 @@ function route() {
   else if (page === 'test' && sub === 'run') { setTab('tests'); run = () => viewTestRun(id); }
   else if (page === 'test') { setTab('tests'); run = () => viewTest(id); }
   else if (page === 'stats') { setTab('more'); run = () => viewStats(isCurrent); }
-  else if (page === 'training') { setTab('more'); run = () => viewTraining(isCurrent); }
+  else if (page === 'training') {
+    const fromCoach = id === 'coach';
+    setTab(fromCoach ? 'coach' : 'more');
+    run = () => viewTraining(isCurrent, fromCoach);
+  }
   else if (page === 'english') { setTab('tests'); run = () => viewEnglish(id, sub, isCurrent); }
-  else if (page === 'coach') { setTab('coach'); run = () => viewCoach(id, sub); }
+  else if (page === 'coach') { setTab('coach'); run = () => viewCoach(id, sub, from); }
   else if (page === 'chat') {
     setTab('more');
     run = () => {
@@ -580,7 +585,7 @@ async function viewTests(isCurrent) {
     <div class="tiles">
       <a class="tile cut" href="#/english">
         <b>Английский</b>
-        <small>${ENGLISH.reduce((count, group) => count + group.lessons.length, 0)} уроков · времена</small>
+        <small>Времена · подготовка к тесту за неделю</small>
       </a>
       ${tests.filter((t) => t.source_key !== SAMPLE_TEST_FILE).map((t) => {
         const n = parseTest(t.source).questions.length;
@@ -691,7 +696,9 @@ async function viewTestRun(id, onlyThese = null, course = null) {
   if (!t) return notFound('Тест не найден', '#/tests');
   const all = parseTest(t.source).questions;
   const list = shuffle(onlyThese || all).map((qq) => ({ ...qq, options: shuffle(qq.options) }));
-  const back = course ? `#/english/${course.slug}` : `#/test/${id}`;
+  const back = course?.backHref || `#/test/${id}`;
+  const runHref = course?.runHref || `${back}/run`;
+  const exam = course?.exam && !onlyThese;
   header(t.title, back);
   let i = 0;
   let score = 0;
@@ -709,13 +716,17 @@ async function viewTestRun(id, onlyThese = null, course = null) {
       const picked = qq.options[Number(b.dataset.k)];
       $app.querySelectorAll('.opt').forEach((x, k) => {
         x.disabled = true;
-        if (qq.options[k].ok) x.classList.add('right');
+        if (!exam && qq.options[k].ok) x.classList.add('right');
       });
       if (picked.ok) score++;
-      else { b.classList.add('wrong'); wrong.push(qq); }
-      if (navigator.vibrate) navigator.vibrate(picked.ok ? 15 : [30, 40, 30]);
+      else {
+        if (!exam) b.classList.add('wrong');
+        wrong.push({ ...qq, picked: picked.text });
+      }
+      if (exam) b.classList.add('picked');
+      else if (navigator.vibrate) navigator.vibrate(picked.ok ? 15 : [30, 40, 30]);
       document.getElementById('after').innerHTML = `
-        ${qq.explain ? `<div class="explain">${esc(qq.explain)}</div>` : ''}
+        ${!exam && qq.explain ? `<div class="explain">${esc(qq.explain)}</div>` : ''}
         <button class="btn primary block" style="margin-top:18px" id="next">${i + 1 < list.length ? 'Дальше →' : 'Результат'}</button>`;
       document.getElementById('next').onclick = () => { i++; i < list.length ? show() : finish(); };
       document.getElementById('next').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -737,11 +748,16 @@ async function viewTestRun(id, onlyThese = null, course = null) {
       ${wrong.length ? `
         <h4 class="group-title" style="margin-top:24px">Ошибки</h4>
         <div class="mistakes">${wrong.map((qq) => `
-          <div class="mistake"><p>${esc(qq.prompt)}</p><small>✓ ${esc(qq.options.filter((o) => o.ok).map((o) => o.text).join(' / '))}</small></div>`).join('')}
+          <div class="mistake">
+            <p>${esc(qq.prompt)}</p>
+            ${exam ? `<p class="hint">Твой ответ: ${esc(qq.picked)}</p>` : ''}
+            <small>✓ ${esc(qq.options.filter((o) => o.ok).map((o) => o.text).join(' / '))}</small>
+            ${exam && qq.explain ? `<p>${esc(qq.explain)}</p>` : ''}
+          </div>`).join('')}
         </div>` : ''}
       <div class="more-list" style="margin-top:20px">
         ${wrong.length ? '<button class="btn primary block" id="retry-wrong">Пройти только ошибки</button>' : ''}
-        <a class="btn block ${wrong.length ? '' : 'primary'}" href="${back}/run" id="again">Ещё раз целиком</a>
+        <a class="btn block ${wrong.length ? '' : 'primary'}" href="${runHref}" id="again">Ещё раз целиком</a>
         <a class="btn block" href="${back}">${course ? 'К уроку' : 'К тесту'}</a>
       </div>`;
     document.getElementById('retry-wrong')?.addEventListener('click', () => viewTestRun(id, wrong, course));
@@ -763,23 +779,27 @@ async function viewStats(isCurrent) {
   if (isCurrent()) renderStats($app, { boards, tests, attempts });
 }
 
-async function viewTraining(isCurrent) {
-  header('Прогресс тренировок', '#/stats');
+async function viewTraining(isCurrent, fromCoach) {
+  header('Прогресс тренировок', fromCoach ? '#/coach' : '#/stats');
   const data = await callMeAssistant(sb, { action: 'progress' });
   if (!isCurrent()) return;
-  renderTraining($app, data);
+  renderTraining($app, data, fromCoach);
 }
 
 async function viewEnglish(slug, mode, isCurrent) {
-  const lessons = ENGLISH.flatMap((group) => group.lessons);
-  const lesson = lessons.find((item) => item.slug === slug);
-  header(lesson?.title || 'Английский', slug ? '#/english' : '#/tests');
-  if (slug && !lesson) return notFound('Урок не найден', '#/english');
+  const week = slug === 'week';
+  const inWeek = mode === 'week' || mode === 'week-run';
+  const lesson = ENGLISH_LESSONS.find((item) => item.slug === slug);
+  const parentHref = inWeek ? '#/english/week' : '#/english';
+  const lessonHref = `#/english/${slug}${inWeek ? '/week' : ''}`;
+  const runHref = `#/english/${slug}/${inWeek ? 'week-run' : 'run'}`;
+  header(lesson?.title || (week ? 'Неделя до теста' : 'Английский'), slug ? parentHref : '#/tests');
+  if (slug && !lesson && !week) return notFound('Урок не найден', '#/english');
 
   const tests = await allRows('me_tests', 'id,source_key', (query) => query.like('source_key', `${COURSE_PREFIX}%`));
   if (!isCurrent()) return;
   let test = tests.find((item) => item.source_key === COURSE_PREFIX + slug);
-  if (lesson && mode === 'run') {
+  if (lesson && (mode === 'run' || mode === 'week-run')) {
     const source = lessonSource(lesson);
     if (!test) {
       const { data, error } = await sb.from('me_tests').insert({
@@ -788,7 +808,9 @@ async function viewEnglish(slug, mode, isCurrent) {
       if (error && error.code !== '23505') throw error;
       test = data || await q(sb.from('me_tests').select('id').eq('source_key', COURSE_PREFIX + slug).single());
     }
-    if (isCurrent()) return viewTestRun(test.id, null, { slug, test: { title: lesson.title, source } });
+    if (isCurrent()) return viewTestRun(test.id, null, {
+      backHref: lessonHref, runHref, exam: lesson.exam, test: { title: lesson.title, source },
+    });
     return;
   }
 
@@ -804,17 +826,43 @@ async function viewEnglish(slug, mode, isCurrent) {
         <section class="me-panel"><h2>${esc(heading)}</h2><p>${esc(note)}</p>
           <p class="lesson-example" lang="en">${esc(example)}</p></section>`).join('')}</div>
       <p class="hint">${lesson.quiz.length} заданий${summary ? ` · лучший результат ${summary.best}%` : ''}</p>
-      <a class="btn primary block" href="#/english/${slug}/run">Начать практику</a>`;
+      <a class="btn primary block" href="${runHref}">${lesson.exam ? 'Начать пробник' : 'Начать практику'}</a>`;
     return;
   }
 
   const bySlug = new Map(tests.map((item) => [item.source_key.slice(COURSE_PREFIX.length), summaries.get(item.id)]));
-  const completed = lessons.filter((item) => bySlug.get(item.slug)?.best >= 80).length;
+  if (week) {
+    const titles = new Map(ENGLISH_LESSONS.map((item) => [item.slug, item.title]));
+    const covered = WEEK.filter((day) => day.lessons.every((key) => bySlug.get(key)?.best >= 80)).length;
+    $app.innerHTML = `
+      <section class="me-panel course-progress">
+        <h2>Подготовка на семь дней</h2>
+        <p>Зачтено ${covered} из ${WEEK.length} дней · не менее 80% за каждое упражнение дня</p>
+        <progress aria-label="Прогресс подготовки к тесту" value="${covered}" max="${WEEK.length}"></progress>
+      </section>
+      <div class="me-sections">${WEEK.map((day, index) => `
+        <section class="me-panel week-day">
+          <p class="hint">День ${index + 1} · ${esc(day.minutes)}</p>
+          <h2>${esc(day.title)}</h2>
+          <p>${esc(day.task)}</p>
+          <ul>${day.lessons.map((key) => {
+            const result = bySlug.get(key);
+            return `<li><a href="#/english/${key}/week">${esc(titles.get(key))}</a>${result ? `<span>Лучший · ${result.best}%</span>` : ''}</li>`;
+          }).join('')}</ul>
+          ${day.links ? `<details><summary>Дополнительная практика</summary><ul>${day.links.map(([label, href]) =>
+            `<li><a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}</a></li>`).join('')}</ul></details>` : ''}
+        </section>`).join('')}</div>`;
+    return;
+  }
+  const completed = ENGLISH_LESSONS.filter((item) => bySlug.get(item.slug)?.best >= 80).length;
   $app.innerHTML = `
+    <a class="tile cut course-progress" href="#/english/week">
+      <b>Неделя до теста</b><small>Семь нужных времён, практика и пробник</small>
+    </a>
     <section class="me-panel course-progress">
       <h2>Времена в английском</h2>
-      <p>Зачтено ${completed} из ${lessons.length} · от 80% за практику</p>
-      <progress aria-label="Прогресс курса" value="${completed}" max="${lessons.length}"></progress>
+      <p>Зачтено ${completed} из ${ENGLISH_LESSONS.length} · от 80% за практику</p>
+      <progress aria-label="Прогресс курса" value="${completed}" max="${ENGLISH_LESSONS.length}"></progress>
     </section>
     <section class="me-panel tense-guide">
       <h2>Как выбрать время</h2>
@@ -835,9 +883,9 @@ async function viewEnglish(slug, mode, isCurrent) {
       }).join('')}</div>`).join('')}`;
 }
 
-async function viewCoach(encodedExercise, mode) {
+async function viewCoach(encodedExercise, mode, from) {
   const exercise = encodedExercise ? decodeURIComponent(encodedExercise).trim().slice(0, 120) : '';
-  header('Толик · тренер', exercise ? '#/training' : null);
+  header('Толик · тренер', exercise ? (from === 'coach' ? '#/training/coach' : '#/training') : null);
   mountCoach($app, sb, user.id, { exercise, mode });
 }
 
