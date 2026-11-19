@@ -7,11 +7,12 @@ export function mountCoach(app, sb) {
       <div class="coach-log" role="log" aria-label="Переписка с тренером"></div>
       <div data-draft></div>
       <form class="stack-form">
+        <label class="field" data-model-field hidden><span>Модель</span><select name="model"></select></label>
         <label class="field"><span>Сообщение тренеру</span>
           <textarea name="message" rows="3" maxlength="2000" required placeholder="Запиши: сегодня жим 60 кг, 3 подхода по 8"></textarea>
         </label>
         <label class="coach-comment"><input type="checkbox" name="history" disabled>
-          <span>Передать последние записи из Google Таблицы в OpenAI для анализа</span>
+          <span data-history-label>Передать последние записи из Google Таблицы модели для анализа</span>
         </label>
         <p class="error" role="alert"></p>
         <button class="btn primary block" disabled type="submit">Отправить</button>
@@ -19,7 +20,7 @@ export function mountCoach(app, sb) {
     </div>`;
   const view = app.querySelector('.coach');
   const form = view.querySelector('form');
-  const { message, history } = form.elements;
+  const { message, history, model } = form.elements;
   const log = view.querySelector('.coach-log');
   const draft = view.querySelector('[data-draft]');
   const errorLine = form.querySelector('.error');
@@ -86,15 +87,22 @@ export function mountCoach(app, sb) {
   }
 
   request({ action: 'status' }).then((status) => {
-    history.disabled = !status.canRead;
     canWrite = status.canWrite;
     if (!status.ready) {
-      connection.textContent = 'Тренер появится после подключения ключа OpenAI в Supabase.';
+      connection.textContent = 'Тренер появится после подключения ключа провайдера в Supabase.';
       return;
+    }
+    history.disabled = !status.canRead;
+    const { provider, models } = status;
+    if (provider) view.querySelector('[data-history-label]').textContent =
+      `Передать последние записи из Google Таблицы в ${provider} для анализа`;
+    if (models?.length) {
+      model.replaceChildren(...models.map(({ id, label }) => new Option(label, id)));
+      view.querySelector('[data-model-field]').hidden = false;
     }
     connection.textContent = canWrite
       ? 'Можно разбирать историю и записывать тренировки в Google Таблицу.'
-        : 'Тренер подключён. Google Таблица пока не настроена.';
+      : 'Тренер подключён. Google Таблица пока не настроена.';
     send.disabled = false;
   }).catch((error) => { connection.textContent = error.message; });
 
@@ -113,6 +121,7 @@ export function mountCoach(app, sb) {
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
       const result = await request({
         action: 'chat',
+        model: model.value || undefined,
         messages: [...messages.slice(-7), turn],
         useHistory: history.checked,
         today: date.toISOString().slice(0, 10),

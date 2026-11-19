@@ -84,10 +84,10 @@ python -m http.server 8765
 
 ## Тренер в /me
 
-Тренер работает через Supabase Edge Function `me-coach`. История берётся из существующей вкладки «Журнал». В модель отправляются последние 40 заполненных строк, когда включён флажок истории. Запись требует подтверждения черновика. Каждый подход занимает отдельную строку, а объём считает формула журнала.
+Тренер работает через Supabase Edge Function `me-coach`. При подключении Tooken Club доступны GPT-6 Luna (по умолчанию) и Claude Opus 5.5. В модель отправляются последние 40 заполненных строк вкладки «Журнал», когда включён флажок истории. Запись требует подтверждения черновика. Каждый подход занимает отдельную строку, а объём считает формула журнала.
 
 1. В Google Cloud включи Google Sheets API и создай сервисный аккаунт. Выдай его почте права редактора на книгу с тренировками.
-2. В Supabase → Edge Functions → Secrets задай `OPENAI_API_KEY`, `ME_COACH_USER_ID` (UUID твоего пользователя из Authentication), `ME_GOOGLE_SERVICE_ACCOUNT` (JSON ключа сервисного аккаунта) и `ME_TRAINING_SHEET_ID` (часть адреса после `/d/`). Ключи хранятся в секретах Supabase.
+2. В Supabase → Edge Functions → Secrets задай `TOOKEN_API_KEY` и `ME_COACH_USER_ID` (UUID твоего пользователя из Authentication). Для Google Таблицы добавь `ME_GOOGLE_SERVICE_ACCOUNT` (JSON ключа сервисного аккаунта) и `ME_TRAINING_SHEET_ID` (часть адреса после `/d/`). Для прямого подключения к OpenAI вместо Tooken Club используется `OPENAI_API_KEY`. Ключи хранятся в секретах Supabase.
 3. Из папки проекта выполни `supabase functions deploy me-coach --project-ref <project-ref> --no-verify-jwt`. Функция сама проверяет сессию через Supabase Auth и сверяет UUID пользователя с `ME_COACH_USER_ID`.
 
 Затем открой `/me/#/coach` и отправь сообщение. Данные для тестов и английского используют прежние таблицы из `update-6.sql` и `update-7.sql`.
