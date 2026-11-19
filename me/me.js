@@ -178,15 +178,15 @@ function route() {
   const currentUser = user?.id;
   const isCurrent = () => location.hash === hash && user?.id === currentUser;
   let run;
-  if (!page) { setTab('boards'); run = () => viewBoards(); }
-  else if (page === 'board') { setTab('boards'); run = () => viewBoard(id); }
-  else if (page === 'tests') { setTab('tests'); run = () => viewTests(); }
+  if (!page || page === 'tests') { setTab('tests'); run = () => viewTests(isCurrent); }
+  else if (page === 'boards') { setTab('more'); run = () => viewBoards(isCurrent); }
+  else if (page === 'board') { setTab('more'); run = () => viewBoard(id); }
   else if (page === 'test' && sub === 'edit') { setTab('tests'); run = () => viewTestEdit(id); }
   else if (page === 'test' && sub === 'run') { setTab('tests'); run = () => viewTestRun(id); }
   else if (page === 'test') { setTab('tests'); run = () => viewTest(id); }
   else if (page === 'stats') { setTab('stats'); run = () => viewStats(isCurrent); }
-  else if (page === 'english') { setTab('english'); run = () => viewEnglish(id, sub, isCurrent); }
-  else if (page === 'coach') { setTab('more'); run = () => viewCoach(); }
+  else if (page === 'english') { setTab('tests'); run = () => viewEnglish(id, sub, isCurrent); }
+  else if (page === 'coach') { setTab('coach'); run = () => viewCoach(); }
   else if (page === 'more') { setTab('more'); run = () => viewMore(); }
   else { location.hash = '#/'; return; }
   $app.innerHTML = '<div class="loading">Загружаем…</div>';
@@ -212,9 +212,10 @@ const newBoardData = () => ({
   ],
 });
 
-async function viewBoards() {
-  header('Доски');
+async function viewBoards(isCurrent) {
+  header('Доски', '#/more');
   const boards = await q(sb.from('me_boards').select('id,title,data,updated_at').order('sort').order('created_at'));
+  if (!isCurrent()) return;
   $app.innerHTML = `
     <div class="tiles">
       ${boards.map((b) => {
@@ -242,9 +243,9 @@ async function viewBoards() {
 
 async function viewBoard(id) {
   const board = await q(sb.from('me_boards').select('*').eq('id', id).maybeSingle());
-  if (!board) return notFound('Доска не найдена', '#/');
+  if (!board) return notFound('Доска не найдена', '#/boards');
   const data = board.data && Array.isArray(board.data.columns) ? board.data : newBoardData();
-  header(board.title, '#/', '<button class="icon-btn" id="board-menu" aria-label="Меню доски">⋯</button>');
+  header(board.title, '#/boards', '<button class="icon-btn" id="board-menu" aria-label="Меню доски">⋯</button>');
 
   // сохранение с задержкой — чтобы не дёргать базу на каждое движение
   let saveTimer;
@@ -427,7 +428,7 @@ async function viewBoard(id) {
       el.querySelector('[data-del]').onclick = async () => {
         close();
         if (!(await confirmSheet('Удалить доску?', 'Все колонки и карточки удалятся. Это нельзя отменить.'))) return;
-        try { await q(sb.from('me_boards').delete().eq('id', id)); location.hash = '#/'; } catch (e) { toast(humanError(e), true); }
+        try { await q(sb.from('me_boards').delete().eq('id', id)); location.hash = '#/boards'; } catch (e) { toast(humanError(e), true); }
       };
     });
   };
@@ -537,7 +538,7 @@ async function syncRepoTests(force = false) {
   }
 }
 
-async function viewTests() {
+async function viewTests(isCurrent) {
   header('Тесты');
   try {
     await syncRepoTests();
@@ -549,12 +550,18 @@ async function viewTests() {
     q(sb.from('me_tests').select('*').or(`source_key.is.null,source_key.not.like.${COURSE_PREFIX}*`).order('updated_at', { ascending: false })),
     q(sb.from('me_attempts').select('test_id,score,total')),
   ]);
+  if (!isCurrent()) return;
   const best = {};
   attempts.forEach((a) => {
     const p = a.total ? a.score / a.total : 0;
     best[a.test_id] = Math.max(best[a.test_id] ?? 0, p);
   });
   $app.innerHTML = `
+    <a class="tile cut" href="#/english">
+      <b>Английский</b>
+      <small>Времена, теория и практика по урокам</small>
+    </a>
+    <h2 class="group-title">Тесты</h2>
     <div class="tiles">
       ${tests.map((t) => {
         const n = parseTest(t.source).questions.length;
@@ -741,7 +748,7 @@ async function viewStats(isCurrent) {
 async function viewEnglish(slug, mode, isCurrent) {
   const lessons = ENGLISH.flatMap((group) => group.lessons);
   const lesson = lessons.find((item) => item.slug === slug);
-  header(lesson?.title || 'Английский', slug ? '#/english' : null);
+  header(lesson?.title || 'Английский', slug ? '#/english' : '#/tests');
   if (slug && !lesson) return notFound('Урок не найден', '#/english');
 
   const tests = await allRows('me_tests', 'id,source_key', (query) => query.like('source_key', `${COURSE_PREFIX}%`));
@@ -804,7 +811,7 @@ async function viewEnglish(slug, mode, isCurrent) {
 }
 
 async function viewCoach() {
-  header('Помощник по тренировкам', '#/more');
+  header('Помощник по тренировкам');
   mountCoach($app, sb);
 }
 
@@ -824,7 +831,7 @@ async function viewMore() {
       </ol>
     </div>`}
     <div class="more-list" style="margin-top:18px">
-      <a class="btn primary block" href="#/coach">ИИ-помощник по тренировкам</a>
+      <a class="btn block" href="#/boards">Доски</a>
       <a class="btn block" href="../" target="_blank">Открыть сайт ↗</a>
       <a class="btn block" href="../admin.html" target="_blank">Админка сайта ↗</a>
       <button class="btn block danger" id="logout">Выйти</button>
