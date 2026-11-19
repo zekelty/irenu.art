@@ -52,7 +52,7 @@ body.me main#app {
 }
 
 /* ── формы ────────────────────────────────────── */
-.me input[type=text], .me input[type=email], .me input[type=password], .me textarea, .me select {
+.me input[type=text], .me input[type=email], .me input[type=password], .me input[type=date], .me textarea, .me select {
   width: 100%; padding: 13px 14px; border: 1px solid var(--line); border-radius: 0;
   background: var(--bg-2); color: var(--text); font: 16px/1.4 var(--body); /* 16px — iPhone не зумит */
   -webkit-appearance: none; appearance: none;
@@ -230,8 +230,8 @@ body.me main#app {
   margin-bottom: 12px;
 }
 .section-head h2 { margin: 0; }
-.stat-period { display: flex; align-items: center; gap: 8px; color: var(--muted); }
-.stat-period select { width: auto; min-width: 112px; padding: 7px 9px; }
+.stat-period { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 100%; color: var(--muted); }
+.stat-period select { width: auto; min-width: min(112px, 100%); max-width: 100%; padding: 7px 9px; }
 .stat-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .stat-metrics .me-panel { padding: 10px; }
 .stat-metrics strong { display: block; font: 700 clamp(22px, 6vw, 36px)/1 var(--display); }
@@ -278,12 +278,29 @@ body.me main#app {
 .coach-draft td { max-width: 240px; overflow-wrap: anywhere; }
 .coach-draft-scroll { max-width: 100%; overflow-x: auto; }
 .training-day { padding-top: 10px; border-top: 1px solid var(--line); }
-.training-day summary span { float: right; color: var(--muted); }
+.training-day summary span { display: block; color: var(--muted); font-size: 14px; }
+.exercise-help h2 { margin: 0; }
+.exercise-help .btn { white-space: normal; }
+.exercise-series { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.exercise-series li {
+  display: grid; grid-template-columns: minmax(54px, .6fr) minmax(0, 3fr) minmax(72px, 1fr);
+  gap: 8px; align-items: center; font-size: 14px;
+}
+.exercise-series li b { text-align: right; }
+.exercise-meter { height: 8px; background: var(--bg-3); display: block; }
+.exercise-meter i { height: 100%; background: var(--accent); display: block; }
+.coach-focus a { color: var(--text); }
 .chat-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
 .chat-sidebar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .chat-layout > section { min-width: 0; }
 .chat-layout textarea { min-height: 90px; }
 .chat-layout details label { margin-top: 12px; }
+.day-review input[type=date] { min-width: 0; color-scheme: dark; }
+.day-review [data-more-days][hidden] { display: none; }
+.day-entry { overflow-wrap: anywhere; }
+.day-entry summary small { display: block; color: var(--muted); }
+.day-entry h3, .day-entry .row-btns { margin-top: 14px; }
+.day-entry p { white-space: pre-wrap; }
 @media (min-width: 700px) {
   .chat-layout { grid-template-columns: minmax(180px, .7fr) minmax(0, 2fr); }
 }

@@ -6,6 +6,7 @@ import { ENGLISH, COURSE_PREFIX, lessonSource } from './english.js';
 import { renderStats, testSummary } from './stats.js';
 import { callMeAssistant, mountCoach } from './coach.js';
 import { mountChat } from './chat.js';
+import { mountDayReview } from './day.js';
 import { renderTraining } from './training.js';
 
 const $app = document.getElementById('app');
@@ -189,12 +190,19 @@ function route() {
   else if (page === 'stats') { setTab('more'); run = () => viewStats(isCurrent); }
   else if (page === 'training') { setTab('more'); run = () => viewTraining(isCurrent); }
   else if (page === 'english') { setTab('tests'); run = () => viewEnglish(id, sub, isCurrent); }
-  else if (page === 'coach') { setTab('coach'); run = () => viewCoach(); }
+  else if (page === 'coach') { setTab('coach'); run = () => viewCoach(id, sub); }
   else if (page === 'chat') {
     setTab('more');
     run = () => {
       header('Чат-бот', '#/more');
       return mountChat($app, sb, user.id, isCurrent);
+    };
+  }
+  else if (page === 'day') {
+    setTab('more');
+    run = async () => {
+      header('Итоги дня', '#/more');
+      mountDayReview($app, sb);
     };
   }
   else if (page === 'more') { setTab('more'); run = () => viewMore(); }
@@ -827,9 +835,10 @@ async function viewEnglish(slug, mode, isCurrent) {
       }).join('')}</div>`).join('')}`;
 }
 
-async function viewCoach() {
-  header('Толик · тренер');
-  mountCoach($app, sb, user.id);
+async function viewCoach(encodedExercise, mode) {
+  const exercise = encodedExercise ? decodeURIComponent(encodedExercise).trim().slice(0, 120) : '';
+  header('Толик · тренер', exercise ? '#/training' : null);
+  mountCoach($app, sb, user.id, { exercise, mode });
 }
 
 // ═══════════════════════ ЕЩЁ ═══════════════════════
@@ -849,6 +858,7 @@ async function viewMore() {
     </div>`}
     <div class="more-list" style="margin-top:18px">
       <a class="btn primary block" href="#/chat">Чат-бот</a>
+      <a class="btn block" href="#/day">Итоги дня</a>
       <a class="btn block" href="#/stats">Статистика</a>
       <a class="btn block" href="#/boards">Доски</a>
       <a class="btn block" href="../" target="_blank">Открыть сайт ↗</a>

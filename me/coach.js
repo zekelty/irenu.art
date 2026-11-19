@@ -32,11 +32,12 @@ export function showChatPending(log, label) {
   return pending;
 }
 
-export function mountCoach(app, sb, userId) {
+export function mountCoach(app, sb, userId, { exercise = '', mode } = {}) {
   app.innerHTML = `
     <div class="me-sections coach">
       <p class="hint" data-connection role="status">Проверяю подключение…</p>
       <a class="btn block" href="#/training">Журнал и прогресс тренировок</a>
+      ${exercise ? `<p class="hint coach-focus">История упражнения: <b>${esc(exercise)}</b> · <a href="#/coach">Все упражнения</a></p>` : ''}
       <div class="coach-log" role="log" aria-label="Переписка с Толиком"></div>
       <div data-draft></div>
       <form class="stack-form">
@@ -45,7 +46,7 @@ export function mountCoach(app, sb, userId) {
           <textarea name="message" rows="3" maxlength="2000" required placeholder="Запиши: сегодня жим 60 кг, 3 подхода по 8"></textarea>
         </label>
         <label class="coach-comment"><input type="checkbox" name="history" disabled>
-          <span data-history-label>Добавлять журнал тренировок к запросу</span>
+          <span data-history-label>Добавлять журнал и программу тренировок к запросу</span>
         </label>
         <p class="error" role="alert"></p>
         <button class="btn primary block" disabled type="submit">Отправить</button>
@@ -65,6 +66,12 @@ export function mountCoach(app, sb, userId) {
   const request = (body) => callMeAssistant(sb, body);
   const historyKey = `irenu-me-training-history:${userId}`;
   try { history.checked = sessionStorage.getItem(historyKey) === 'on'; } catch { /* optional preference */ }
+  if (exercise) {
+    history.checked = true;
+    message.value = mode === 'weight'
+      ? `Какой рабочий вес взять сегодня в упражнении «${exercise}»? Укажи подходы и повторы по моему журналу и программе.`
+      : `Как мне дальше прогрессировать в упражнении «${exercise}»? Сравни сопоставимые тренировки из журнала.`;
+  }
   history.addEventListener('change', () => {
     try { sessionStorage.setItem(historyKey, history.checked ? 'on' : 'off'); } catch { /* optional preference */ }
   });
@@ -117,7 +124,7 @@ export function mountCoach(app, sb, userId) {
     if (history.disabled) history.checked = false;
     const { provider, models, defaultModel } = status;
     if (provider) view.querySelector('[data-history-label]').textContent =
-      `Добавлять журнал тренировок к запросу в ${provider}`;
+      `Добавлять журнал и программу тренировок к запросу в ${provider}`;
     if (models?.length) {
       model.replaceChildren(...models.map(({ id, label }) => new Option(label, id)));
       if (defaultModel) model.value = defaultModel;
@@ -150,6 +157,7 @@ export function mountCoach(app, sb, userId) {
       const result = await request({
         action: 'chat',
         model: model.value || undefined,
+        exercise: exercise || undefined,
         messages: [...messages.slice(-7), turn],
         useHistory,
         today: date.toISOString().slice(0, 10),
