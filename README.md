@@ -84,10 +84,12 @@ python -m http.server 8765
 
 ## Тренер в /me
 
-Тренер работает через Supabase Edge Function `me-coach`. При подключении Tooken Club доступны GPT-6 Luna (по умолчанию) и Claude Opus 5.5. В модель отправляются последние 40 заполненных строк вкладки «Журнал», когда включён флажок истории. Запись требует подтверждения черновика. Каждый подход занимает отдельную строку, а объём считает формула журнала.
+Толик и чат-бот работают через Supabase Edge Function `me-coach`. При подключении Tooken Club доступны Claude Opus 5.5 (по умолчанию) и GPT-6 Luna. Тренировки после подтверждения черновика сохраняются в личном журнале Supabase. График по упражнениям учитывает записи журнала и прежние тренировки из вкладки «Журнал» Google Таблицы. Последние 40 записей передаются модели только при включённой галочке истории. Чаты и их контекст сохраняются в браузере с привязкой к аккаунту.
 
-1. В Google Cloud включи Google Sheets API и создай сервисный аккаунт. Выдай его почте права редактора на книгу с тренировками.
-2. В Supabase → Edge Functions → Secrets задай `TOOKEN_API_KEY` и `ME_COACH_USER_ID` (UUID твоего пользователя из Authentication). Для Google Таблицы добавь `ME_GOOGLE_SERVICE_ACCOUNT` (JSON ключа сервисного аккаунта) и `ME_TRAINING_SHEET_ID` (часть адреса после `/d/`). Для прямого подключения к OpenAI вместо Tooken Club используется `OPENAI_API_KEY`. Ключи хранятся в секретах Supabase.
+1. Выполни `supabase/update-8.sql` в SQL Editor проекта.
+2. В Supabase → Edge Functions → Secrets задай `TOOKEN_API_KEY` и `ME_COACH_USER_ID` (UUID твоего пользователя из Authentication). Для чтения старого журнала доступной по ссылке Google Таблицы добавь `ME_TRAINING_SHEET_ID` (часть адреса после `/d/`). Для прямого подключения к OpenAI используется `OPENAI_API_KEY`. Ключи хранятся в секретах Supabase.
 3. Из папки проекта выполни `supabase functions deploy me-coach --project-ref <project-ref> --no-verify-jwt`. Функция сама проверяет сессию через Supabase Auth и сверяет UUID пользователя с `ME_COACH_USER_ID`.
+
+Необязательный секрет `ME_CHAT_PROFILE` задаёт контекст по умолчанию для новых чатов.
 
 Затем открой `/me/#/coach` и отправь сообщение. Данные для тестов и английского используют прежние таблицы из `update-6.sql` и `update-7.sql`.

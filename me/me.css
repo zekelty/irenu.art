@@ -260,3 +260,13 @@ body.me main#app {
 .coach-draft th { font-weight: 600; color: var(--muted); }
 .coach-draft td { max-width: 240px; overflow-wrap: anywhere; }
 .coach-draft-scroll { overflow: auto; }
+.training-day { padding-top: 10px; border-top: 1px solid var(--line); }
+.training-day summary span { float: right; color: var(--muted); }
+.chat-layout { display: grid; gap: 14px; align-items: start; }
+.chat-sidebar { display: grid; gap: 12px; }
+.chat-layout > section { min-width: 0; }
+.chat-layout textarea { min-height: 90px; }
+.chat-layout details label { margin-top: 12px; }
+@media (min-width: 700px) {
+  .chat-layout { grid-template-columns: minmax(180px, .7fr) minmax(0, 2fr); }
+}

@@ -70,6 +70,7 @@ export function renderStats(app, { boards, tests, attempts }) {
 
   app.innerHTML = `
     <div class="me-sections">
+      <a class="tile cut" href="#/training"><b>Тренировки</b><small>Рабочий вес и история по упражнениям</small></a>
       <section aria-labelledby="study-stats">
         <div class="section-head">
           <h2 id="study-stats">Учёба</h2>

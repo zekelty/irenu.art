@@ -1,10 +1,20 @@
 import { esc } from '../js/util.js';
 
+export async function callMeAssistant(sb, body) {
+  const { data, error } = await sb.functions.invoke('me-coach', { body });
+  if (!error) return data;
+  const detail = await error.context?.json?.().catch(() => null);
+  throw new Error(detail?.error || (error.context?.status === 404
+    ? 'Сервер ещё не подключён.'
+    : 'Не удалось связаться с сервером. Попробуй позже.'));
+}
+
 export function mountCoach(app, sb) {
   app.innerHTML = `
     <div class="me-sections coach">
       <p class="hint" data-connection role="status">Проверяю подключение…</p>
-      <div class="coach-log" role="log" aria-label="Переписка с тренером"></div>
+      <a class="btn block" href="#/training">Журнал и прогресс тренировок</a>
+      <div class="coach-log" role="log" aria-label="Переписка с Толиком"></div>
       <div data-draft></div>
       <form class="stack-form">
         <label class="field" data-model-field hidden><span>Модель</span><select name="model"></select></label>
@@ -12,7 +22,7 @@ export function mountCoach(app, sb) {
           <textarea name="message" rows="3" maxlength="2000" required placeholder="Запиши: сегодня жим 60 кг, 3 подхода по 8"></textarea>
         </label>
         <label class="coach-comment"><input type="checkbox" name="history" disabled>
-          <span data-history-label>Передать последние записи из Google Таблицы модели для анализа</span>
+          <span data-history-label>Передать последние записи тренировок модели для анализа</span>
         </label>
         <p class="error" role="alert"></p>
         <button class="btn primary block" disabled type="submit">Отправить</button>
@@ -29,30 +39,20 @@ export function mountCoach(app, sb) {
   const messages = [];
   let canWrite = false;
 
-  async function request(body) {
-    const { data, error } = await sb.functions.invoke('me-coach', { body });
-    if (error) {
-      const detail = await error.context?.json?.().catch(() => null);
-      const message = detail?.error || (error.context?.status === 404
-        ? 'Сервер тренера ещё не подключён.'
-        : 'Не удалось связаться с тренером. Попробуй позже.');
-      throw new Error(message);
-    }
-    return data;
-  }
+  const request = (body) => callMeAssistant(sb, body);
 
   function addMessage(role, content) {
     const entry = document.createElement('section');
     entry.className = 'me-panel';
-    entry.innerHTML = `<h2>${role === 'user' ? 'Ты' : 'Тренер'}</h2><p class="coach-message"></p>`;
+    entry.innerHTML = `<h2>${role === 'user' ? 'Ты' : 'Толик'}</h2><p class="coach-message"></p>`;
     entry.lastElementChild.textContent = content;
     log.append(entry);
   }
 
-  function showDraft({ columns, rows, entries }) {
+  function showDraft({ columns, rows, entries, sessionId }) {
     draft.innerHTML = `
       <section class="me-panel coach-draft">
-        <h2>Черновик для Google Таблицы</h2>
+        <h2>Черновик тренировки</h2>
         <div class="coach-draft-scroll"><table>
           <thead><tr>${columns.map((cell) => `<th scope="col">${esc(cell)}</th>`).join('')}</tr></thead>
           <tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody>
@@ -71,14 +71,15 @@ export function mountCoach(app, sb) {
       save.disabled = cancel.disabled = send.disabled = true;
       save.textContent = 'Записываю…';
       try {
-        const result = await request({ action: 'append', entries });
+        await request({ action: 'append', entries, sessionId });
         if (!view.isConnected) return;
         draft.replaceChildren();
-        addMessage('assistant', `Запись добавлена в Google Таблицу (${result.range}).`);
-        messages.push({ role: 'assistant', content: 'Предыдущий черновик уже записан в таблицу.' });
+        addMessage('assistant', 'Тренировка сохранена в личном журнале.');
+        messages.push({ role: 'assistant', content: 'Предыдущий черновик уже записан в личный журнал.' });
       } catch (error) {
-        draft.querySelector('.error').textContent = error.message + ' Перед повторной попыткой проверь таблицу.';
-        save.textContent = 'Запись не подтверждена';
+        draft.querySelector('.error').textContent = error.message;
+        save.textContent = 'Повторить запись';
+        save.disabled = false;
         cancel.disabled = false;
       } finally {
         send.disabled = false;
@@ -93,16 +94,17 @@ export function mountCoach(app, sb) {
       return;
     }
     history.disabled = !status.canRead;
-    const { provider, models } = status;
+    const { provider, models, defaultModel } = status;
     if (provider) view.querySelector('[data-history-label]').textContent =
-      `Передать последние записи из Google Таблицы в ${provider} для анализа`;
+      `Передать последние записи тренировок в ${provider} для анализа`;
     if (models?.length) {
       model.replaceChildren(...models.map(({ id, label }) => new Option(label, id)));
+      if (defaultModel) model.value = defaultModel;
       view.querySelector('[data-model-field]').hidden = false;
     }
     connection.textContent = canWrite
-      ? 'Можно разбирать историю и записывать тренировки в Google Таблицу.'
-      : 'Тренер подключён. Google Таблица пока не настроена.';
+      ? 'Тренировки сохраняются в личном журнале.'
+      : 'Тренер подключён. Личный журнал пока недоступен.';
     send.disabled = false;
   }).catch((error) => { connection.textContent = error.message; });
 
@@ -129,6 +131,7 @@ export function mountCoach(app, sb) {
       if (!view.isConnected) return;
       addMessage('user', content);
       addMessage('assistant', result.answer);
+      if (result.historyMissing) errorLine.textContent = 'Старая Google Таблица недоступна. Использованы записи личного журнала.';
       messages.push(turn, {
         role: 'assistant',
         content: JSON.stringify({ answer: result.answer, draft: result.draft?.entries }).slice(0, 2000),

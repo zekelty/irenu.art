@@ -4,7 +4,9 @@ import { getClient, isConfigured } from '../js/db.js';
 import { esc } from '../js/util.js';
 import { ENGLISH, COURSE_PREFIX, lessonSource } from './english.js';
 import { renderStats, testSummary } from './stats.js';
-import { mountCoach } from './coach.js';
+import { callMeAssistant, mountCoach } from './coach.js';
+import { mountChat } from './chat.js';
+import { renderTraining } from './training.js';
 
 const $app = document.getElementById('app');
 const $title = document.getElementById('title');
@@ -184,9 +186,17 @@ function route() {
   else if (page === 'test' && sub === 'edit') { setTab('tests'); run = () => viewTestEdit(id); }
   else if (page === 'test' && sub === 'run') { setTab('tests'); run = () => viewTestRun(id); }
   else if (page === 'test') { setTab('tests'); run = () => viewTest(id); }
-  else if (page === 'stats') { setTab('stats'); run = () => viewStats(isCurrent); }
+  else if (page === 'stats') { setTab('more'); run = () => viewStats(isCurrent); }
+  else if (page === 'training') { setTab('more'); run = () => viewTraining(isCurrent); }
   else if (page === 'english') { setTab('tests'); run = () => viewEnglish(id, sub, isCurrent); }
   else if (page === 'coach') { setTab('coach'); run = () => viewCoach(); }
+  else if (page === 'chat') {
+    setTab('more');
+    run = () => {
+      header('Чат-бот', '#/more');
+      return mountChat($app, sb, user.id, isCurrent);
+    };
+  }
   else if (page === 'more') { setTab('more'); run = () => viewMore(); }
   else { location.hash = '#/'; return; }
   $app.innerHTML = '<div class="loading">Загружаем…</div>';
@@ -493,6 +503,7 @@ const SAMPLE = `? Сколько будет 2 + 2?
 // Формат файла: шапка «title: …» / «description: …», строка «---», дальше вопросы в обычном формате.
 let syncedAt = 0;
 let syncWarned = false;
+const SAMPLE_TEST_FILE = 'irenu-23.txt';
 
 function parseTestFile(text, file) {
   const t = String(text).replace(/\r/g, '');
@@ -516,10 +527,11 @@ async function syncRepoTests(force = false) {
   try {
     const r = await fetch(`tests/index.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) return;
-    files = (await r.json()).filter((f) => typeof f === 'string' && f.trim());
+    files = (await r.json()).filter((f) => typeof f === 'string' && f.trim() && f !== SAMPLE_TEST_FILE);
   } catch { return; }
   const existing = await q(sb.from('me_tests').select('id,source_key,title,description,source').not('source_key', 'is', null));
-  const byKey = new Map(existing.filter((t) => !t.source_key.startsWith(COURSE_PREFIX)).map((t) => [t.source_key, t]));
+  const byKey = new Map(existing.filter((t) => t.source_key !== SAMPLE_TEST_FILE && !t.source_key.startsWith(COURSE_PREFIX))
+    .map((t) => [t.source_key, t]));
   for (const file of files) {
     try {
       const r = await fetch(`tests/${encodeURIComponent(file)}?t=${Date.now()}`, { cache: 'no-store' });
@@ -557,13 +569,12 @@ async function viewTests(isCurrent) {
     best[a.test_id] = Math.max(best[a.test_id] ?? 0, p);
   });
   $app.innerHTML = `
-    <a class="tile cut" href="#/english">
-      <b>Английский</b>
-      <small>Времена, теория и практика по урокам</small>
-    </a>
-    <h2 class="group-title">Тесты</h2>
     <div class="tiles">
-      ${tests.map((t) => {
+      <a class="tile cut" href="#/english">
+        <b>Английский</b>
+        <small>${ENGLISH.reduce((count, group) => count + group.lessons.length, 0)} уроков · времена</small>
+      </a>
+      ${tests.filter((t) => t.source_key !== SAMPLE_TEST_FILE).map((t) => {
         const n = parseTest(t.source).questions.length;
         const b = best[t.id];
         return `<a class="tile cut" href="#/test/${t.id}">
@@ -573,7 +584,6 @@ async function viewTests(isCurrent) {
           <span class="bar"><i style="width:${b != null ? Math.round(b * 100) : 0}%"></i></span>
         </a>`;
       }).join('')}
-      <a class="tile add" href="#/test/new/edit"><b>+ Новый тест</b></a>
     </div>`;
 }
 
@@ -736,13 +746,20 @@ async function viewTestRun(id, onlyThese = null, course = null) {
 }
 
 async function viewStats(isCurrent) {
-  header('Статистика');
+  header('Статистика', '#/more');
   const [boards, tests, attempts] = await Promise.all([
     allRows('me_boards', 'id,title,data,updated_at'),
     allRows('me_tests', 'id,title,source_key'),
     allRows('me_attempts', 'id,test_id,created_at,score,total'),
   ]);
   if (isCurrent()) renderStats($app, { boards, tests, attempts });
+}
+
+async function viewTraining(isCurrent) {
+  header('Прогресс тренировок', '#/stats');
+  const data = await callMeAssistant(sb, { action: 'progress' });
+  if (!isCurrent()) return;
+  renderTraining($app, data);
 }
 
 async function viewEnglish(slug, mode, isCurrent) {
@@ -811,7 +828,7 @@ async function viewEnglish(slug, mode, isCurrent) {
 }
 
 async function viewCoach() {
-  header('Помощник по тренировкам');
+  header('Толик · тренер');
   mountCoach($app, sb);
 }
 
@@ -831,6 +848,8 @@ async function viewMore() {
       </ol>
     </div>`}
     <div class="more-list" style="margin-top:18px">
+      <a class="btn primary block" href="#/chat">Чат-бот</a>
+      <a class="btn block" href="#/stats">Статистика</a>
       <a class="btn block" href="#/boards">Доски</a>
       <a class="btn block" href="../" target="_blank">Открыть сайт ↗</a>
       <a class="btn block" href="../admin.html" target="_blank">Админка сайта ↗</a>
