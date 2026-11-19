@@ -1,5 +1,5 @@
 import { esc } from '../js/util.js';
-import { callMeAssistant } from './coach.js';
+import { appendChatMessage, callMeAssistant, showChatPending } from './coach.js';
 
 export async function mountChat(app, sb, userId, isCurrent) {
   const status = await callMeAssistant(sb, { action: 'status' });
@@ -53,7 +53,7 @@ export async function mountChat(app, sb, userId, isCurrent) {
             <p class="hint">Этот текст отправляется выбранной модели с каждым сообщением этого чата.</p>
           </details>
           <div class="coach-log" role="log" aria-label="Переписка">
-            ${chat.messages.map(({ role, content }) => `<section class="me-panel">
+            ${chat.messages.map(({ role, content }) => `<section class="me-panel chat-bubble">
               <h2>${role === 'user' ? 'Ты' : 'Помощник'}</h2><p class="coach-message">${esc(content)}</p>
             </section>`).join('')}
           </div>
@@ -70,14 +70,22 @@ export async function mountChat(app, sb, userId, isCurrent) {
     root.querySelector('[data-context]').oninput = (event) => { chat.context = event.target.value; save(); };
     const form = root.querySelector('form');
     const send = form.querySelector('button');
+    const input = form.elements.message;
+    const log = root.querySelector('[role="log"]');
+    const errorLine = form.querySelector('.error');
     form.onsubmit = async (event) => {
       event.preventDefault();
-      const content = form.elements.message.value.trim();
+      const content = input.value.trim();
       if (!content || busy) return;
       busy = true;
+      input.blur();
+      input.value = '';
+      errorLine.textContent = '';
       root.querySelectorAll('button, select, textarea').forEach((element) => { element.disabled = true; });
-      send.textContent = 'Отвечаю…';
+      send.textContent = 'Ожидаю ответ…';
       const turn = { role: 'user', content };
+      const bubble = appendChatMessage(log, 'Ты', content);
+      const pending = showChatPending(log, 'Модель готовит ответ…');
       try {
         const result = await callMeAssistant(sb, {
           action: 'assistant', model: chat.model, context: chat.context,
@@ -86,12 +94,21 @@ export async function mountChat(app, sb, userId, isCurrent) {
         if (!chat.messages.length) chat.title = content.slice(0, 45);
         chat.messages.push(turn, { role: 'assistant', content: result.answer });
         save();
-        if (isCurrent() && root.isConnected) render();
+        if (isCurrent() && root.isConnected) {
+          appendChatMessage(log, 'Помощник', result.answer);
+          root.querySelector('[data-chats]').selectedOptions[0].textContent = chat.title;
+          if (storageError) errorLine.textContent = 'История не сохранилась на устройстве.';
+        }
       } catch (error) {
-        form.querySelector('.error').textContent = error.message;
+        bubble.remove();
+        input.value = content;
+        errorLine.textContent = error.message;
+      } finally {
+        pending.remove();
         root.querySelectorAll('button, select, textarea').forEach((element) => { element.disabled = false; });
         send.textContent = 'Отправить';
-      } finally { busy = false; }
+        busy = false;
+      }
     };
   }
 

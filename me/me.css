@@ -213,7 +213,7 @@ body.me main#app {
 
 /* ── статистика, курс и тренировки ────────────────────── */
 .coach [data-model-field][hidden] { display: none; }
-.me-sections { display: grid; gap: 18px; }
+.me-sections { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 .me-panel {
   min-width: 0; padding: 14px 16px; border: 1px solid var(--line);
   border-left: 3px solid var(--accent); background: var(--bg-2);
@@ -251,19 +251,36 @@ body.me main#app {
 .course-progress, .tense-guide { margin-bottom: 18px; }
 .course-progress progress { display: block; width: 100%; margin-top: 10px; accent-color: var(--accent); }
 .lesson-example { color: var(--text); font-weight: 600; }
-.coach-log { display: grid; gap: 10px; }
-.coach-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.coach-log { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.coach-log:empty { display: none; }
+.chat-bubble, .chat-pending { scroll-margin-top: calc(env(safe-area-inset-top) + 76px); }
+.coach-message, .coach .error, .chat-view .error { white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-pending { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.typing-dots { flex: none; display: flex; align-items: center; gap: 4px; }
+.typing-dots i {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  animation: typing-pulse 1.2s ease-in-out infinite;
+}
+.typing-dots i:nth-child(2) { animation-delay: .15s; }
+.typing-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes typing-pulse {
+  0%, 60%, 100% { opacity: .45; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .typing-dots i { animation: none; }
+}
 .coach-comment { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: var(--muted); }
 .coach-comment input { flex: 0 0 auto; width: 16px; height: 16px; accent-color: var(--accent); }
 .coach-draft table { border-collapse: collapse; width: 100%; margin: 10px 0; text-align: left; }
 .coach-draft td, .coach-draft th { padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .coach-draft th { font-weight: 600; color: var(--muted); }
 .coach-draft td { max-width: 240px; overflow-wrap: anywhere; }
-.coach-draft-scroll { overflow: auto; }
+.coach-draft-scroll { max-width: 100%; overflow-x: auto; }
 .training-day { padding-top: 10px; border-top: 1px solid var(--line); }
 .training-day summary span { float: right; color: var(--muted); }
-.chat-layout { display: grid; gap: 14px; align-items: start; }
-.chat-sidebar { display: grid; gap: 12px; }
+.chat-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
+.chat-sidebar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .chat-layout > section { min-width: 0; }
 .chat-layout textarea { min-height: 90px; }
 .chat-layout details label { margin-top: 12px; }

@@ -9,7 +9,30 @@ export async function callMeAssistant(sb, body) {
     : 'Не удалось связаться с сервером. Попробуй позже.'));
 }
 
-export function mountCoach(app, sb) {
+export function appendChatMessage(log, author, content) {
+  const entry = document.createElement('section');
+  entry.className = 'me-panel chat-bubble';
+  entry.innerHTML = '<h2></h2><p class="coach-message"></p>';
+  entry.firstElementChild.textContent = author;
+  entry.lastElementChild.textContent = content;
+  log.append(entry);
+  return entry;
+}
+
+export function showChatPending(log, label) {
+  const pending = document.createElement('div');
+  pending.className = 'me-panel chat-pending';
+  pending.setAttribute('role', 'status');
+  pending.innerHTML = '<span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span><span></span>';
+  pending.lastElementChild.textContent = label;
+  log.append(pending);
+  requestAnimationFrame(() => {
+    if (pending.isConnected) pending.scrollIntoView({ block: 'nearest' });
+  });
+  return pending;
+}
+
+export function mountCoach(app, sb, userId) {
   app.innerHTML = `
     <div class="me-sections coach">
       <p class="hint" data-connection role="status">Проверяю подключение…</p>
@@ -22,7 +45,7 @@ export function mountCoach(app, sb) {
           <textarea name="message" rows="3" maxlength="2000" required placeholder="Запиши: сегодня жим 60 кг, 3 подхода по 8"></textarea>
         </label>
         <label class="coach-comment"><input type="checkbox" name="history" disabled>
-          <span data-history-label>Передать последние записи тренировок модели для анализа</span>
+          <span data-history-label>Добавлять журнал тренировок к запросу</span>
         </label>
         <p class="error" role="alert"></p>
         <button class="btn primary block" disabled type="submit">Отправить</button>
@@ -40,14 +63,11 @@ export function mountCoach(app, sb) {
   let canWrite = false;
 
   const request = (body) => callMeAssistant(sb, body);
-
-  function addMessage(role, content) {
-    const entry = document.createElement('section');
-    entry.className = 'me-panel';
-    entry.innerHTML = `<h2>${role === 'user' ? 'Ты' : 'Толик'}</h2><p class="coach-message"></p>`;
-    entry.lastElementChild.textContent = content;
-    log.append(entry);
-  }
+  const historyKey = `irenu-me-training-history:${userId}`;
+  try { history.checked = sessionStorage.getItem(historyKey) === 'on'; } catch { /* optional preference */ }
+  history.addEventListener('change', () => {
+    try { sessionStorage.setItem(historyKey, history.checked ? 'on' : 'off'); } catch { /* optional preference */ }
+  });
 
   function showDraft({ columns, rows, entries, sessionId }) {
     draft.innerHTML = `
@@ -74,7 +94,7 @@ export function mountCoach(app, sb) {
         await request({ action: 'append', entries, sessionId });
         if (!view.isConnected) return;
         draft.replaceChildren();
-        addMessage('assistant', 'Тренировка сохранена в личном журнале.');
+        appendChatMessage(log, 'Толик', 'Тренировка сохранена в личном журнале.');
         messages.push({ role: 'assistant', content: 'Предыдущий черновик уже записан в личный журнал.' });
       } catch (error) {
         draft.querySelector('.error').textContent = error.message;
@@ -94,9 +114,10 @@ export function mountCoach(app, sb) {
       return;
     }
     history.disabled = !status.canRead;
+    if (history.disabled) history.checked = false;
     const { provider, models, defaultModel } = status;
     if (provider) view.querySelector('[data-history-label]').textContent =
-      `Передать последние записи тренировок в ${provider} для анализа`;
+      `Добавлять журнал тренировок к запросу в ${provider}`;
     if (models?.length) {
       model.replaceChildren(...models.map(({ id, label }) => new Option(label, id)));
       if (defaultModel) model.value = defaultModel;
@@ -113,11 +134,16 @@ export function mountCoach(app, sb) {
     if (send.disabled) return;
     const content = message.value.trim();
     if (!content) return;
+    const useHistory = history.checked;
+    message.blur();
+    message.value = '';
     send.disabled = true;
-    send.textContent = 'Тренер отвечает…';
+    send.textContent = 'Толик отвечает…';
     errorLine.textContent = '';
     draft.replaceChildren();
     const turn = { role: 'user', content };
+    const bubble = appendChatMessage(log, 'Ты', content);
+    const pending = showChatPending(log, useHistory ? 'Толик анализирует журнал…' : 'Толик готовит ответ…');
     try {
       const date = new Date();
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
@@ -125,22 +151,31 @@ export function mountCoach(app, sb) {
         action: 'chat',
         model: model.value || undefined,
         messages: [...messages.slice(-7), turn],
-        useHistory: history.checked,
+        useHistory,
         today: date.toISOString().slice(0, 10),
       });
       if (!view.isConnected) return;
-      addMessage('user', content);
-      addMessage('assistant', result.answer);
+      const reply = appendChatMessage(log, 'Толик', result.answer);
+      if (Number.isInteger(result.historyDays)) {
+        const meta = document.createElement('p');
+        meta.className = 'hint';
+        meta.textContent = result.historyDays
+          ? `В контексте тренировочных дней: ${result.historyDays}`
+          : 'В журнале не нашлось записей для анализа.';
+        reply.append(meta);
+      }
       if (result.historyMissing) errorLine.textContent = 'Старая Google Таблица недоступна. Использованы записи личного журнала.';
       messages.push(turn, {
         role: 'assistant',
         content: JSON.stringify({ answer: result.answer, draft: result.draft?.entries }).slice(0, 2000),
       });
-      message.value = '';
       if (result.draft && canWrite) showDraft(result.draft);
     } catch (error) {
+      bubble.remove();
+      if (!message.value) message.value = content;
       errorLine.textContent = error.message;
     } finally {
+      pending.remove();
       send.disabled = false;
       send.textContent = 'Отправить';
     }

@@ -829,7 +829,7 @@ async function viewEnglish(slug, mode, isCurrent) {
 
 async function viewCoach() {
   header('Толик · тренер');
-  mountCoach($app, sb);
+  mountCoach($app, sb, user.id);
 }
 
 // ═══════════════════════ ЕЩЁ ═══════════════════════
