@@ -2,6 +2,9 @@
 // Доступ только после входа (тот же логин, что в админке). Данные видит только владелец (RLS). // 23
 import { getClient, isConfigured } from '../js/db.js';
 import { esc } from '../js/util.js';
+import { ENGLISH, COURSE_PREFIX, lessonSource } from './english.js';
+import { renderStats, testSummary } from './stats.js';
+import { mountCoach } from './coach.js';
 
 const $app = document.getElementById('app');
 const $title = document.getElementById('title');
@@ -20,6 +23,15 @@ async function q(promise) {
   const { data, error } = await promise;
   if (error) throw error;
   return data;
+}
+async function allRows(table, columns, filter = (query) => query) {
+  const rows = [];
+  const size = 500;
+  for (let offset = 0; ; offset += size) {
+    const page = await q(filter(sb.from(table).select(columns)).order('id').range(offset, offset + size - 1));
+    rows.push(...page);
+    if (page.length < size) return rows;
+  }
 }
 let toastTimer;
 function toast(msg, bad = false) {
@@ -43,7 +55,12 @@ function header(title, backHref = null, action = '') {
   $saved.textContent = '';
 }
 function setTab(name) {
-  $tabs.querySelectorAll('a').forEach((a) => a.classList.toggle('active', a.dataset.tab === name));
+  $tabs.querySelectorAll('a').forEach((a) => {
+    const active = a.dataset.tab === name;
+    a.classList.toggle('active', active);
+    if (active) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
 }
 const fmtDate = (d) => new Date(d).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const shuffle = (arr) => {
@@ -157,6 +174,9 @@ function enter() {
 function route() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   const [page, id, sub] = parts;
+  const hash = location.hash;
+  const currentUser = user?.id;
+  const isCurrent = () => location.hash === hash && user?.id === currentUser;
   let run;
   if (!page) { setTab('boards'); run = () => viewBoards(); }
   else if (page === 'board') { setTab('boards'); run = () => viewBoard(id); }
@@ -164,10 +184,16 @@ function route() {
   else if (page === 'test' && sub === 'edit') { setTab('tests'); run = () => viewTestEdit(id); }
   else if (page === 'test' && sub === 'run') { setTab('tests'); run = () => viewTestRun(id); }
   else if (page === 'test') { setTab('tests'); run = () => viewTest(id); }
+  else if (page === 'stats') { setTab('stats'); run = () => viewStats(isCurrent); }
+  else if (page === 'english') { setTab('english'); run = () => viewEnglish(id, sub, isCurrent); }
+  else if (page === 'coach') { setTab('more'); run = () => viewCoach(); }
   else if (page === 'more') { setTab('more'); run = () => viewMore(); }
   else { location.hash = '#/'; return; }
   $app.innerHTML = '<div class="loading">Загружаем…</div>';
-  run().catch((e) => { console.error(e); $app.innerHTML = `<p class="empty-note">${esc(humanError(e))}</p>`; });
+  run().catch((e) => {
+    console.error(e);
+    if (isCurrent()) $app.innerHTML = `<p class="empty-note">${esc(humanError(e))}</p>`;
+  });
   window.scrollTo(0, 0);
 }
 
@@ -492,7 +518,7 @@ async function syncRepoTests(force = false) {
     files = (await r.json()).filter((f) => typeof f === 'string' && f.trim());
   } catch { return; }
   const existing = await q(sb.from('me_tests').select('id,source_key,title,description,source').not('source_key', 'is', null));
-  const byKey = new Map(existing.map((t) => [t.source_key, t]));
+  const byKey = new Map(existing.filter((t) => !t.source_key.startsWith(COURSE_PREFIX)).map((t) => [t.source_key, t]));
   for (const file of files) {
     try {
       const r = await fetch(`tests/${encodeURIComponent(file)}?t=${Date.now()}`, { cache: 'no-store' });
@@ -520,7 +546,7 @@ async function viewTests() {
     if (!syncWarned) { syncWarned = true; toast('Тесты от Claude не подтянулись — запусти supabase/update-7.sql', true); }
   }
   const [tests, attempts] = await Promise.all([
-    q(sb.from('me_tests').select('*').order('updated_at', { ascending: false })),
+    q(sb.from('me_tests').select('*').or(`source_key.is.null,source_key.not.like.${COURSE_PREFIX}*`).order('updated_at', { ascending: false })),
     q(sb.from('me_attempts').select('test_id,score,total')),
   ]);
   const best = {};
@@ -633,12 +659,15 @@ async function viewTestEdit(id) {
 }
 
 // Прохождение. onlyThese — повтор только ошибок (такая попытка в историю не пишется)
-async function viewTestRun(id, onlyThese = null) {
-  const t = await q(sb.from('me_tests').select('id,title,source').eq('id', id).maybeSingle());
+async function viewTestRun(id, onlyThese = null, course = null) {
+  const hash = location.hash;
+  const t = course?.test ?? await q(sb.from('me_tests').select('id,title,source').eq('id', id).maybeSingle());
+  if (location.hash !== hash) return;
   if (!t) return notFound('Тест не найден', '#/tests');
   const all = parseTest(t.source).questions;
   const list = shuffle(onlyThese || all).map((qq) => ({ ...qq, options: shuffle(qq.options) }));
-  header(t.title, `#/test/${id}`);
+  const back = course ? `#/english/${course.slug}` : `#/test/${id}`;
+  header(t.title, back);
   let i = 0;
   let score = 0;
   const wrong = [];
@@ -670,9 +699,12 @@ async function viewTestRun(id, onlyThese = null) {
 
   const finish = async () => {
     const pct = Math.round((score / list.length) * 100);
+    const nextButton = document.getElementById('next');
+    nextButton.disabled = true;
     if (!onlyThese) {
       try { await q(sb.from('me_attempts').insert({ test_id: id, score, total: list.length })); } catch (e) { toast(humanError(e), true); }
     }
+    if (location.hash !== hash || !nextButton.isConnected) return;
     $app.innerHTML = `
       <div class="run-top"><span>Результат</span><span>${score} / ${list.length}</span></div>
       <p class="result-num">${pct}<small>%</small></p>
@@ -684,16 +716,96 @@ async function viewTestRun(id, onlyThese = null) {
         </div>` : ''}
       <div class="more-list" style="margin-top:20px">
         ${wrong.length ? '<button class="btn primary block" id="retry-wrong">Пройти только ошибки</button>' : ''}
-        <a class="btn block ${wrong.length ? '' : 'primary'}" href="#/test/${id}/run" id="again">Ещё раз целиком</a>
-        <a class="btn block" href="#/test/${id}">К тесту</a>
+        <a class="btn block ${wrong.length ? '' : 'primary'}" href="${back}/run" id="again">Ещё раз целиком</a>
+        <a class="btn block" href="${back}">${course ? 'К уроку' : 'К тесту'}</a>
       </div>`;
-    document.getElementById('retry-wrong')?.addEventListener('click', () => viewTestRun(id, wrong));
+    document.getElementById('retry-wrong')?.addEventListener('click', () => viewTestRun(id, wrong, course));
     // если уже на #/test/id/run, hashchange не сработает — перезапускаем вручную
-    document.getElementById('again').addEventListener('click', (e) => { e.preventDefault(); viewTestRun(id); });
+    document.getElementById('again').addEventListener('click', (e) => { e.preventDefault(); viewTestRun(id, null, course); });
   };
 
   if (!list.length) { $app.innerHTML = '<p class="empty-note">В тесте нет вопросов</p>'; return; }
   show();
+}
+
+async function viewStats(isCurrent) {
+  header('Статистика');
+  const [boards, tests, attempts] = await Promise.all([
+    allRows('me_boards', 'id,title,data,updated_at'),
+    allRows('me_tests', 'id,title,source_key'),
+    allRows('me_attempts', 'id,test_id,created_at,score,total'),
+  ]);
+  if (isCurrent()) renderStats($app, { boards, tests, attempts });
+}
+
+async function viewEnglish(slug, mode, isCurrent) {
+  const lessons = ENGLISH.flatMap((group) => group.lessons);
+  const lesson = lessons.find((item) => item.slug === slug);
+  header(lesson?.title || 'Английский', slug ? '#/english' : null);
+  if (slug && !lesson) return notFound('Урок не найден', '#/english');
+
+  const tests = await allRows('me_tests', 'id,source_key', (query) => query.like('source_key', `${COURSE_PREFIX}%`));
+  if (!isCurrent()) return;
+  let test = tests.find((item) => item.source_key === COURSE_PREFIX + slug);
+  if (lesson && mode === 'run') {
+    const source = lessonSource(lesson);
+    if (!test) {
+      const { data, error } = await sb.from('me_tests').insert({
+        title: lesson.title, source, source_key: COURSE_PREFIX + slug,
+      }).select('id').single();
+      if (error && error.code !== '23505') throw error;
+      test = data || await q(sb.from('me_tests').select('id').eq('source_key', COURSE_PREFIX + slug).single());
+    }
+    if (isCurrent()) return viewTestRun(test.id, null, { slug, test: { title: lesson.title, source } });
+    return;
+  }
+
+  const attempts = tests.length ? await allRows('me_attempts', 'id,test_id,score,total', (query) =>
+    query.in('test_id', tests.map((item) => item.id))) : [];
+  if (!isCurrent()) return;
+  const summaries = testSummary(attempts);
+  if (lesson) {
+    const summary = summaries.get(test?.id);
+    $app.innerHTML = `
+      <p class="hint">${esc(lesson.summary)}</p>
+      <div class="me-sections">${lesson.notes.map(([heading, note, example]) => `
+        <section class="me-panel"><h2>${esc(heading)}</h2><p>${esc(note)}</p>
+          <p class="lesson-example" lang="en">${esc(example)}</p></section>`).join('')}</div>
+      <p class="hint">${lesson.quiz.length} заданий${summary ? ` · лучший результат ${summary.best}%` : ''}</p>
+      <a class="btn primary block" href="#/english/${slug}/run">Начать практику</a>`;
+    return;
+  }
+
+  const bySlug = new Map(tests.map((item) => [item.source_key.slice(COURSE_PREFIX.length), summaries.get(item.id)]));
+  const completed = lessons.filter((item) => bySlug.get(item.slug)?.best >= 80).length;
+  $app.innerHTML = `
+    <section class="me-panel course-progress">
+      <h2>Времена в английском</h2>
+      <p>Зачтено ${completed} из ${lessons.length} · от 80% за практику</p>
+      <progress aria-label="Прогресс курса" value="${completed}" max="${lessons.length}"></progress>
+    </section>
+    <section class="me-panel tense-guide">
+      <h2>Как выбрать время</h2>
+      <p>Сначала пойми, что хочешь подчеркнуть. Вот как меняется смысл одной фразы про тренировку.</p>
+      <details><summary>Тренируюсь по понедельникам</summary><p><b lang="en">I train on Mondays.</b> Present Simple передаёт привычку.</p></details>
+      <details><summary>Тренируюсь прямо сейчас</summary><p><b lang="en">I’m training right now.</b> Present Continuous показывает процесс сейчас.</p></details>
+      <details><summary>Тренировался вчера</summary><p><b lang="en">I trained yesterday.</b> Past Simple помещает событие в законченный отрезок прошлого.</p></details>
+      <details><summary>На этой неделе уже тренировался дважды</summary><p><b lang="en">I’ve trained twice this week.</b> Present Perfect подводит итог к этому моменту. Неделя ещё идёт.</p></details>
+    </section>
+    ${ENGLISH.map((group) => `
+      <h2 class="group-title">${esc(group.title)}</h2>
+      <div class="tiles">${group.lessons.map((item) => {
+        const summary = bySlug.get(item.slug);
+        return `<a class="tile cut" href="#/english/${item.slug}">
+          <b lang="en">${esc(item.title)}</b><small>${esc(item.summary)}</small>
+          <small>${summary ? `${summary.best >= 80 ? 'Зачтено' : 'В процессе'} · ${summary.best}%` : 'Теория и практика'}</small>
+        </a>`;
+      }).join('')}</div>`).join('')}`;
+}
+
+async function viewCoach() {
+  header('Помощник по тренировкам', '#/more');
+  mountCoach($app, sb);
 }
 
 // ═══════════════════════ ЕЩЁ ═══════════════════════
@@ -712,6 +824,7 @@ async function viewMore() {
       </ol>
     </div>`}
     <div class="more-list" style="margin-top:18px">
+      <a class="btn primary block" href="#/coach">ИИ-помощник по тренировкам</a>
       <a class="btn block" href="../" target="_blank">Открыть сайт ↗</a>
       <a class="btn block" href="../admin.html" target="_blank">Админка сайта ↗</a>
       <button class="btn block danger" id="logout">Выйти</button>
